@@ -105,7 +105,9 @@ func CORS() gin.HandlerFunc {
 			"http://localhost:3000",  // Frontend
 			"http://localhost:3001",  // Admin Panel
 			"https://localhost:3000", // Frontend (HTTPS)
-			"https://localhost:3001", // Admin Panel (HTTPS)
+			"https://localhost:3001",
+			"http://localhost",
+			"https://localhost",
 		}
 
 		isAllowed := false

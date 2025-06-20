@@ -1,12 +1,17 @@
-FROM node:18
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-COPY . .
+COPY package*.json ./
+RUN npm ci
 
-RUN npm install
+COPY . .
 RUN npm run build
 
-EXPOSE 3000
+# Stage production: serve static files với một web server nhẹ (ví dụ nginx hoặc serve)
+FROM nginx:alpine
 
-CMD ["npm", "run", "dev"]
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]

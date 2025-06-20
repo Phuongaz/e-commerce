@@ -1,0 +1,1 @@
+import{j as e}from"./index-CyFUtVx2.js";const r=({text1:s,text2:t})=>e.jsx("div",{className:"flex items-center justify-center gap-3 mb-4 bangers-regular",children:e.jsxs("p",{className:"text-[#8B4513] text-3xl font-medium uppercase tracking-wide",children:[s,e.jsx("span",{className:"text-[#aba4a1] font-semibold pl-2",children:t})]})});export{r as T};
