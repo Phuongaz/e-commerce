@@ -67,7 +67,7 @@ const Cart = () => {
         // Nếu có giỏ hàng guest, thực hiện merge
         if (Object.keys(guestCart).length > 0) {
           await axios.post(
-            `${backendUrl}/api/cart/guest/merge`,
+            `${backendUrl}/api/cart`,
             { guestCart },
             { 
               headers: { 

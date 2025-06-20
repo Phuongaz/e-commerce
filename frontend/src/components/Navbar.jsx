@@ -3,6 +3,9 @@ import { assets } from "../assets/frontend_assets/assets.js";
 import { Link, NavLink } from "react-router-dom";
 import { ShopContext } from "../context/Shopcontext.jsx";
 import { useLocation } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const Navbar = () => {
   const [visible, setVisible] = useState(false);
@@ -10,17 +13,28 @@ const Navbar = () => {
     setShowSearch,
     getCartCount,
     navigate,
-    token,
-    setToken,
     setCartItems,
+    backendUrl,
   } = useContext(ShopContext);
+  const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
   const location = useLocation(); // Get the current location
 
-  const Logout = () => {
-    navigate("/login");
-    localStorage.removeItem("token");
-    setToken("");
-    setCartItems({});
+  const Logout = async () => {
+    navigate("/");
+    const response = await axios.post(`${backendUrl}/api/auth/logout`, {}, {
+      withCredentials: true,
+    });
+    if (response.data.success) {
+      setIsAuthenticated(false);
+      setCartItems({});
+      toast.success("Logged out successfully", {
+        position: "top-center",
+        autoClose: 1500,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: false,
+      });
+    }
   };
 
   return (
@@ -63,13 +77,13 @@ const Navbar = () => {
         />
         <div className="group relative">
           <img
-            onClick={() => (token ? null : navigate("/login"))}
+            onClick={() => (isAuthenticated ? null : navigate("/login"))}
             src={assets.profile_icon}
             alt="profile icon"
             className="w-5 cursor-pointer hover:opacity-80"
           />
 
-          {token && (
+          {isAuthenticated && (
             <div className="group-hover:block hidden absolute dropdown-menu right-0 pt-4 z-20">
               <div className="flex flex-col gap-2 w-36 py-3 bg-[#F5F5DC] text-[#2C1810] rounded border border-[#8B4513]">
                 <p

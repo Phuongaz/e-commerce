@@ -10,18 +10,15 @@ const MyProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false); // State for loader
-  const { backendUrl, token, navigate } = useContext(ShopContext);
+  const { backendUrl, navigate, loginSuccess } = useContext(ShopContext);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const activeToken = token || storedToken;
-
-    if (!activeToken) return;
+    if (!loginSuccess) return;
 
     const fetchUserData = async () => {
       try {
         const response = await axios.get(`${backendUrl}/api/user/profile`, {
-          headers: { token: activeToken },
+          withCredentials: true,
         });
         setUser(response.data);
       } catch (error) {
@@ -39,14 +36,14 @@ const MyProfile = () => {
     };
 
     fetchUserData();
-  }, [token]);
+  }, [loginSuccess]);
 
   const handleEmailChange = async () => {
     try {
       const response = await axios.put(
-        `${backendUrl}/api/user/update-email`,
+        `${backendUrl}/api/user/profile`,
         { email: newEmail },
-        { headers: { token: token } }
+        { withCredentials: true }
       );
       toast.success("Email updated successfully", {
         position: "top-center",
@@ -77,10 +74,10 @@ const MyProfile = () => {
   const handleDeleteAccount = async () => {
     setIsDeleting(true); // Show loader
     try {
-      await axios.delete(`${backendUrl}/api/user/account`, {
-        headers: { token: token },
+      await axios.delete(`${backendUrl}/api/user/logout`, {
+        withCredentials: true,
       });
-      localStorage.clear();
+      setLoginSuccess(false);
       toast.success("Account deleted successfully", {
         position: "top-center",
         autoClose: 1500,
@@ -113,7 +110,7 @@ const MyProfile = () => {
     }
   };
 
-  if (!token) {
+  if (!loginSuccess) {
     return (
       <div className="text-center text-black font-semibold mt-20">
         Please log in to view your profile.

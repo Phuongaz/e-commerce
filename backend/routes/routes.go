@@ -65,9 +65,9 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 			cart := user.Group("/cart")
 			{
 				cart.GET("/user-cart", cartController.GetCart)
-				cart.POST("/add-to-cart", cartController.AddToCart) //add to cart
-				cart.PUT("/update-cart", cartController.UpdateCart)
-				cart.POST("/merge-cart", cartController.MergeCart) //merge cart on guest user after login
+				cart.POST("/add", cartController.AddToCart) //add to cart
+				cart.PUT("/update", cartController.UpdateCart)
+				cart.POST("/merge", cartController.MergeCart) //merge cart on guest user after login
 			}
 		}
 		protected.POST("/orders", orderController.CreateOrder)

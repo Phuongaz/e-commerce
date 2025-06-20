@@ -44,7 +44,7 @@ func (c *UserController) Register(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, user)
+	ctx.JSON(http.StatusCreated, models.NewSuccessResponse(user, "User created successfully"))
 }
 
 func (c *UserController) Login(ctx *gin.Context) {
@@ -136,9 +136,5 @@ func (c *UserController) Logout(ctx *gin.Context) {
 }
 
 func setCookie(ctx *gin.Context, token string) {
-	//set cookie with http only
-	//Secure: false {test on http}
-	//SameSite: lax
-	//path: /
-	ctx.SetCookie("access_token", token, 3600, "/", "localhost", false, false)
+	ctx.SetCookie("access_token", token, 3600, "/", "", false, false)
 }

@@ -1,7 +1,8 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState, useContext } from "react";
 import { toast, Zoom } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { AuthContext } from "./AuthContext";
 
 export const ShopContext = createContext();
 
@@ -14,9 +15,8 @@ const ShopContextProvider = (props) => {
   const [cartItems, setCartItems] = useState({});
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState("");
   const navigate = useNavigate();
-
+  const { isAuthenticated } = useContext(AuthContext);
   // Load guest cart from localStorage
   useEffect(() => {
     const guestCart = JSON.parse(localStorage.getItem("guestCart"));
@@ -26,11 +26,13 @@ const ShopContextProvider = (props) => {
   }, []);
 
   // Fetch user cart if logged in
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-      getUserCart(storedToken);
+  useEffect(async () => {
+    //get profile from backend
+    const response = await axios.get(`${backendUrl}/api/user/profile`, {
+      withCredentials: true,
+    });
+    if (response.data.success) {
+      getUserCart(response.data.userID);
     }
   }, []);
 
@@ -60,12 +62,12 @@ const ShopContextProvider = (props) => {
     }
     setCartItems(cartData);
 
-    if (token) {
+    if (loginSuccess) {
       try {
         const response = await axios.post(
-          `${backendUrl}/api/cart/add`,
+          `${backendUrl}/api/user/cart/add`,
           { itemId, size },
-          { headers: { token } }
+          { withCredentials: true }
         );
     
         navigate("/cart");
@@ -88,13 +90,23 @@ const ShopContextProvider = (props) => {
     }
     setCartItems(cartData);
 
-    if (token) {
-      try {
+    try {
+      const cartItem = {
+        productId: itemId,
+        size: size,
+        quantity: quantity,
+      }
+
         const response = await axios.put(
-          `${backendUrl}/api/cart/update`,
-          { itemId, size, quantity },
-          { headers: { token } }
+          `${backendUrl}/api/user/cart/update`,
+          cartItem,
+          { withCredentials: true }
         );
+        if (response.data.success) {
+          toast.success(response.data.message);
+        } else {
+          toast.error(response.data.message);
+        }
       } catch (error) {
         toast.error(error.message, {
           position: "top-center",
@@ -108,20 +120,20 @@ const ShopContextProvider = (props) => {
           transition: Zoom,
         });
       }
-    } else {
-      localStorage.setItem("guestCart", JSON.stringify(cartData));
-    }
+      
   };
 
   //---------------- Get User Cart (Only for Logged-In Users) ----------------//
 
-  const getUserCart = async (token) => {
+  const getUserCart = async (userID) => {
     try {
-      const response = await axios.get(`${backendUrl}/api/cart/user-cart`, {
-        headers: { token },
+      const response = await axios.get(`${backendUrl}/api/user/cart/user-cart`, {
+        withCredentials: true,
       });
       if (response.data.success) {
-        setCartItems(response.data.cartData);
+        setCartItems(response.data.data);
+      } else {
+        toast.error(response.data.message);
       }
     } catch (error) {
       toast.error(error.message, {
@@ -167,7 +179,7 @@ const ShopContextProvider = (props) => {
   const getProductsData = async () => {
     try {
       const response = await axios.get(
-        `${backendUrl}/api/product/list-all-products`, {
+        `${backendUrl}/api/products`, {
           withCredentials:true
         }
       );
@@ -202,10 +214,8 @@ const ShopContextProvider = (props) => {
     getCartAmount,
     navigate,
     backendUrl,
-    token,
-    setToken,
     loading,
-    setLoading,
+    setLoading
   };
 
   return (

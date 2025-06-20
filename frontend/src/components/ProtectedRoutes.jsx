@@ -1,16 +1,20 @@
 // src/routes/ProtectedRoutes.js
-import React from "react";
+import React, { useContext } from "react";
 import { Navigate } from "react-router-dom";
+import { ShopContext } from "../context/Shopcontext";
 
-// Function to get token from localStorage
-const getToken = () => localStorage.getItem("token");
-
-// Protect Routes (Require Authentication)
 export const ProtectedRoute = ({ children }) => {
-  return getToken() ? children : <Navigate to="/login" replace />;
+  const { loginSuccess } = useContext(ShopContext);
+
+  if (loginSuccess === null) return <div>Loading...</div>;
+
+  return loginSuccess ? children : <Navigate to="/login" replace />;
 };
 
-// Restrict Logged-in Users (Guest Only Routes)
 export const GuestRoute = ({ children }) => {
-  return !getToken() ? children : <Navigate to="/" replace />;
+  const { loginSuccess } = useContext(ShopContext);
+
+  if (loginSuccess === null) return <div>Loading...</div>;
+
+  return !loginSuccess ? children : <Navigate to="/" replace />;
 };

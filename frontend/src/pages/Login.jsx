@@ -4,10 +4,12 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
 const Login = () => {
+  const {isAuthenticated, setIsAuthenticated} = useContext(AuthContext);
   const [currentState, setCurrentState] = useState("Login");
-  const { token, setToken, navigate, backendUrl } = useContext(ShopContext);
+  const {navigate, backendUrl } = useContext(ShopContext);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,13 +27,20 @@ const Login = () => {
           : { email, password };
 
       const response = await axios.post(
-        `${backendUrl}/api/user${endpoint}`,
-        payload
+        `${backendUrl}/api/auth${endpoint}`,
+        payload, 
+        { withCredentials: true }
       );
 
       if (response.data.success) {
-        setToken(response.data.token);
-        localStorage.setItem("token", response.data.token);
+        toast.success(response.data.message, {
+          position: "top-center",
+          autoClose: 1500,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: false,
+        });
+        setIsAuthenticated(true);
       } else {
         toast.error(response.data.message, {
           position: "top-center",
@@ -45,7 +54,7 @@ const Login = () => {
         });
       }
     } catch (error) {
-      toast.error("Something went wrong. Please try again.", {
+      toast.error("Something went wrong. Please try again. " + error, {
         position: "top-center",
         autoClose: 1500,
         hideProgressBar: false,
@@ -61,16 +70,13 @@ const Login = () => {
   };
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-
-    if (token && storedToken) {
-      // ✅ Check both token state & localStorage
+    if (isAuthenticated) {
       const redirectTo = location.state?.from || "/";
       setTimeout(() => {
         navigate(redirectTo);
       }, 1200);
     }
-  }, [token, navigate, location.state]);
+  }, [navigate, location.state, isAuthenticated]);
 
   return (
     <div className="flex items-center justify-center">

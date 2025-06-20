@@ -16,7 +16,7 @@ const Orders = () => {
       if (!token) return;
 
       setLoading(true); // Start loading before API call
-      const response = await axios.get(`${backendUrl}/api/order/user-orders`, {
+      const response = await axios.get(`${backendUrl}/api/orders`, {
         headers: {
           token: token,
         },
