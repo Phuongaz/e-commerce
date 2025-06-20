@@ -16,12 +16,14 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	productService := services.NewProductService(db)
 	orderService := services.NewOrderService(db, productService)
 	categoryService := services.NewCategoryService(db)
+	cartService := services.NewCartService(db)
 
 	// Initialize controllers
 	userController := controllers.NewUserController(userService)
 	productController := controllers.NewProductController(productService)
 	orderController := controllers.NewOrderController(orderService)
 	categoryController := controllers.NewCategoryController(categoryService)
+	cartController := controllers.NewCartController(cartService)
 
 	// Generate admin account
 	err := userService.GenerateAdminAccount()
@@ -41,6 +43,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 		{
 			auth.POST("/register", userController.Register)
 			auth.POST("/login", userController.Login)
+			auth.POST("/logout", middleware.Auth(), userController.Logout)
 			//auth.POST("/forgot-password", userController.ForgotPassword)
 		}
 
@@ -53,9 +56,20 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	protected := r.Group("/api")
 	protected.Use(middleware.Auth())
 	{
-		protected.GET("/profile", userController.GetProfile)
-		protected.PUT("/profile", userController.UpdateProfile)
+		user := protected.Group("/user")
+		{
+			user.GET("/profile", userController.GetProfile)
+			user.PUT("/profile", userController.UpdateProfile)
 
+			//cart
+			cart := user.Group("/cart")
+			{
+				cart.GET("/user-cart", cartController.GetCart)
+				cart.POST("/add-to-cart", cartController.AddToCart) //add to cart
+				cart.PUT("/update-cart", cartController.UpdateCart)
+				cart.POST("/merge-cart", cartController.MergeCart) //merge cart on guest user after login
+			}
+		}
 		protected.POST("/orders", orderController.CreateOrder)
 		protected.GET("/orders", orderController.GetUserOrders)
 		protected.GET("/orders/:id", orderController.GetOrder)

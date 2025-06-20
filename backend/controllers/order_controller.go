@@ -24,7 +24,7 @@ func (c *OrderController) CreateOrder(ctx *gin.Context) {
 	userIDStr := ctx.GetString("userID")
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		ctx.JSON(http.StatusUnauthorized, models.NewErrorResponse("Invalid user ID"))
 		return
 	}
 
@@ -33,13 +33,13 @@ func (c *OrderController) CreateOrder(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
 	order, err := c.orderService.CreateOrder(userID, input.Items)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
@@ -50,13 +50,13 @@ func (c *OrderController) GetUserOrders(ctx *gin.Context) {
 	userIDStr := ctx.GetString("userID")
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		ctx.JSON(http.StatusUnauthorized, models.NewErrorResponse("Invalid user ID"))
 		return
 	}
 
 	orders, err := c.orderService.GetUserOrders(userID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse(err.Error()))
 		return
 	}
 
@@ -67,13 +67,13 @@ func (c *OrderController) GetOrder(ctx *gin.Context) {
 	userIDStr := ctx.GetString("userID")
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		ctx.JSON(http.StatusUnauthorized, models.NewErrorResponse("Invalid user ID"))
 		return
 	}
 
 	orderID, err := primitive.ObjectIDFromHex(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid order ID"))
 		return
 	}
 
@@ -85,7 +85,7 @@ func (c *OrderController) GetOrder(ctx *gin.Context) {
 
 	// Check if the order belongs to the user
 	if order.UserID != userID {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		ctx.JSON(http.StatusForbidden, models.NewErrorResponse("Access denied"))
 		return
 	}
 
@@ -95,7 +95,7 @@ func (c *OrderController) GetOrder(ctx *gin.Context) {
 func (c *OrderController) UpdateOrderStatus(ctx *gin.Context) {
 	orderID, err := primitive.ObjectIDFromHex(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid order ID"))
 		return
 	}
 
@@ -104,13 +104,13 @@ func (c *OrderController) UpdateOrderStatus(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
 	order, err := c.orderService.UpdateOrderStatus(orderID, input.Status)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse(err.Error()))
 		return
 	}
 
@@ -120,16 +120,16 @@ func (c *OrderController) UpdateOrderStatus(ctx *gin.Context) {
 func (c *OrderController) CancelOrder(ctx *gin.Context) {
 	orderID, err := primitive.ObjectIDFromHex(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid order ID"))
 		return
 	}
 
 	if err := c.orderService.CancelOrder(orderID); err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Order cancelled successfully"})
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Order cancelled successfully"))
 }
 
 func (c *OrderController) GetAllOrders(ctx *gin.Context) {

@@ -20,13 +20,13 @@ func NewCategoryController(categoryService *services.CategoryService) *CategoryC
 func (c *CategoryController) CreateCategory(ctx *gin.Context) {
 	var category models.Category
 	if err := ctx.ShouldBindJSON(&category); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(400, models.NewErrorResponse(err.Error()))
 		return
 	}
 
 	createdCategory, err := c.categoryService.CreateCategory(&category)
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": "Failed to create category"})
+		ctx.JSON(500, models.NewErrorResponse("Failed to create category"))
 		return
 	}
 
@@ -36,7 +36,7 @@ func (c *CategoryController) CreateCategory(ctx *gin.Context) {
 func (c *CategoryController) ListCategories(ctx *gin.Context) {
 	categories, err := c.categoryService.ListCategories()
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": "Failed to fetch categories"})
+		ctx.JSON(500, models.NewErrorResponse("Failed to fetch categories"))
 		return
 	}
 
@@ -48,11 +48,11 @@ func (c *CategoryController) GetCategory(ctx *gin.Context) {
 
 	category, err := c.categoryService.GetCategory(id)
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": "Failed to fetch category"})
+		ctx.JSON(500, models.NewErrorResponse("Failed to fetch category"))
 		return
 	}
 	if category == nil {
-		ctx.JSON(404, gin.H{"error": "Category not found"})
+		ctx.JSON(404, models.NewErrorResponse("Category not found"))
 		return
 	}
 
@@ -64,13 +64,13 @@ func (c *CategoryController) UpdateCategory(ctx *gin.Context) {
 
 	var category models.Category
 	if err := ctx.ShouldBindJSON(&category); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(400, models.NewErrorResponse(err.Error()))
 		return
 	}
 
 	updatedCategory, err := c.categoryService.UpdateCategory(id, &category)
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": "Failed to update category"})
+		ctx.JSON(500, models.NewErrorResponse("Failed to update category"))
 		return
 	}
 
@@ -81,7 +81,7 @@ func (c *CategoryController) DeleteCategory(ctx *gin.Context) {
 	id := ctx.Param("id")
 
 	if err := c.categoryService.DeleteCategory(id); err != nil {
-		ctx.JSON(500, gin.H{"error": "Failed to delete category"})
+		ctx.JSON(500, models.NewErrorResponse("Failed to delete category"))
 		return
 	}
 

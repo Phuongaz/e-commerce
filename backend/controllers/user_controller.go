@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	"ecommerce-api/models"
 	"ecommerce-api/services"
 
 	"github.com/gin-gonic/gin"
@@ -27,19 +28,19 @@ func (c *UserController) Register(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
 	existingUser, err := c.userService.GetUserByEmail(input.Email)
 	if err == nil && existingUser != nil {
-		ctx.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
+		ctx.JSON(http.StatusConflict, models.NewErrorResponse("User already exists"))
 		return
 	}
 
 	user, err := c.userService.CreateUser(input.Name, input.Email, input.Password)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
@@ -53,17 +54,18 @@ func (c *UserController) Login(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
 	token, err := c.userService.Login(input.Email, input.Password)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusUnauthorized, models.NewErrorResponse(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"token": token})
+	setCookie(ctx, token)
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Login successful"))
 }
 
 // func (c *UserController) ForgotPassword(ctx *gin.Context) {
@@ -89,13 +91,13 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 	userIDStr := ctx.GetString("userID")
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		ctx.JSON(http.StatusUnauthorized, models.NewErrorResponse("Invalid user ID"))
 		return
 	}
 
 	user, err := c.userService.GetUserByID(userID)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse(err.Error()))
 		return
 	}
 
@@ -106,7 +108,7 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userIDStr := ctx.GetString("userID")
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		ctx.JSON(http.StatusUnauthorized, models.NewErrorResponse("Invalid user ID"))
 		return
 	}
 
@@ -115,15 +117,28 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
 	user, err := c.userService.UpdateUser(userID, input.Name)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse(err.Error()))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, user)
+}
+
+func (c *UserController) Logout(ctx *gin.Context) {
+	ctx.SetCookie("access_token", "", -1, "/", "localhost", false, false)
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Logout successful"))
+}
+
+func setCookie(ctx *gin.Context, token string) {
+	//set cookie with http only
+	//Secure: false {test on http}
+	//SameSite: lax
+	//path: /
+	ctx.SetCookie("access_token", token, 3600, "/", "localhost", false, false)
 }

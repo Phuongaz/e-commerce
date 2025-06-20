@@ -45,6 +45,10 @@ func (c *ProductController) ListProducts(ctx *gin.Context) {
 		return
 	}
 
+	if len(products) == 0 {
+		products = []*models.Product{}
+	}
+
 	ctx.JSON(http.StatusOK, products)
 }
 
