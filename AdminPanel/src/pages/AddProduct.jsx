@@ -29,13 +29,13 @@ const AddProduct = ({ token }) => {
       });
 
       const response = await axios.post(
-        `${backendUrl}/api/product/add`,
+        `${backendUrl}/api/admin/products`,
         formData,
         {
           headers: {
-            admintoken: token,
             "Content-Type": "multipart/form-data",
           },
+          withCredentials: true,
         }
       );
 

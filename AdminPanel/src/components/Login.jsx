@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { backendUrl } from "../App";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Zoom } from "react-toastify";
 import { assets } from "../assets/admin_assets/assets";
+import { AuthContext } from "../context/AuthContext";
 
 const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || "";
-const adminPassword = import.meta.env.VITE_ADMIN_PAASSWORD || "";
+const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || "";
 
-const Login = ({ token, setToken }) => {
+const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const { setIsAuthenticated } = useContext(AuthContext);
   useEffect(() => {
     // Set default values after component mounts
     if (adminEmail && adminPassword) {
@@ -25,17 +26,29 @@ const Login = ({ token, setToken }) => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${backendUrl}/api/user/admin`, {
+      const loginResponse = await axios.post(`${backendUrl}/api/auth/login`, {
         email,
         password,
+      }, {
+        withCredentials: true,
       });
 
-      if (response?.data?.success) {
-        const adminToken = response?.data?.adminToken;
-        // Store token in localStorage
-        localStorage.setItem("adminToken", adminToken);
+      const profileResponse = await axios.get(`${backendUrl}/api/user/profile`, {
+        withCredentials: true,
+      });
+
+      //check if user is admin
+      if (profileResponse?.data?.data?.role !== "admin") {
+        setIsAuthenticated(false);
+        toast.error("You are not authorized to access this page", {
+          position: "top-center",
+          autoClose: 1500,
+        });
+      }
+
+      if (loginResponse?.data?.success && profileResponse?.data?.success) {
         // Update token state
-        setToken(adminToken);
+        setIsAuthenticated(true);
         navigate("/");
         setEmail("");
         setPassword("");
@@ -131,7 +144,7 @@ const Login = ({ token, setToken }) => {
 
       {/* Footer */}
       <p className="mt-6 text-sm text-gray-600">
-        © {new Date().getFullYear()} AllWear. All rights reserved.
+        © {new Date().getFullYear()} Phuongaz. All rights reserved.
       </p>
     </div>
   );

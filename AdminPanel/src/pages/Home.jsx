@@ -2,25 +2,23 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { backendUrl } from "../App";
 
-const Home = ({ token }) => {
+const Home = () => {
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalOrders: 0,
-    totalProducts: 0,
+    total_users: 0,
+    total_orders: 0,
+    total_products: 0,
   });
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`${backendUrl}/api/user/admin/stats`, {
-        headers: {
-          admintoken: token,
-        },
+      const response = await axios.get(`${backendUrl}/api/admin/stats`, {
+        withCredentials: true,
       });
       if (response?.data?.success) {
         setStats({
-          totalUsers: response.data.totalUsers,
-          totalOrders: response.data.totalOrders,
-          totalProducts: response.data.totalProducts,
+          total_users: response.data.data.total_users,
+          total_orders: response.data.data.total_orders,
+          total_products: response.data.data.total_products,
         });
       }
     } catch (error) {
@@ -30,7 +28,7 @@ const Home = ({ token }) => {
 
   useEffect(() => {
     fetchStats();
-  }, [token]);
+  }, []);
 
   return (
     <div className="p-5 min-h-screen">
@@ -39,15 +37,15 @@ const Home = ({ token }) => {
       </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        <StatCard title="Tổng người dùng" count={stats.totalUsers} color="blue" />
+        <StatCard title="Tổng người dùng" count={stats.total_users} color="blue" />
         <StatCard
           title="Tổng đơn hàng"
-          count={stats.totalOrders}
+          count={stats.total_orders}
           color="green"
         />
         <StatCard
           title="Tổng sản phẩm"
-          count={stats.totalProducts}
+            count={stats.total_products}
           color="purple"
         />
       </div>

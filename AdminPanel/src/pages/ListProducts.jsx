@@ -5,7 +5,7 @@ import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
 import { MdDelete, MdEdit } from "react-icons/md";
 
-const ListProducts = ({ token }) => {
+const ListProducts = () => {
   const [listItems, setListItems] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,7 +14,10 @@ const ListProducts = ({ token }) => {
   const fetchList = async () => {
     try {
       const response = await axios.get(
-        `${backendUrl}/api/product/list-all-products`
+        `${backendUrl}/api/products`,
+        {
+          withCredentials: true,
+        }
       );
       if (response?.data?.success) {
         setListItems(response.data.products);
@@ -47,8 +50,8 @@ const ListProducts = ({ token }) => {
 
   const removeProduct = async (id) => {
     try {
-      const response = await axios.delete(`${backendUrl}/api/product/${id}`, {
-        headers: { admintoken: token },
+      const response = await axios.delete(`${backendUrl}/api/admin/products/${id}`, {
+        withCredentials: true,
       });
       if (response?.data?.success) {
         toast.success("Product removed successfully!", {

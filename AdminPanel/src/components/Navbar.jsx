@@ -1,12 +1,14 @@
-import React from "react";
+import React, { useContext } from "react";
 import { assets } from "../assets/admin_assets/assets.js";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
-const Navbar = ({ setToken }) => {
+const Navbar = () => {
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useContext(AuthContext);
 
   const onLogout = () => {
-    setToken("");
+    setIsAuthenticated(false);
     navigate("/");
   };
 
