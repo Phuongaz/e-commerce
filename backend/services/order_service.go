@@ -169,8 +169,8 @@ func (s *OrderService) CancelOrder(id primitive.ObjectID) error {
 	return nil
 }
 
-func (s *OrderService) GetAllOrders() ([]models.Order, error) {
-	cursor, err := s.collection.Find(context.Background(), bson.M{})
+func (s *OrderService) GetAllOrders(filter bson.M) ([]models.Order, error) {
+	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
 		return nil, err
 	}

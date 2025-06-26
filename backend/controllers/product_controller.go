@@ -3,6 +3,8 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"ecommerce-api/models"
 	"ecommerce-api/services"
@@ -21,17 +23,74 @@ func NewProductController(productService *services.ProductService) *ProductContr
 	}
 }
 
+// //       const response = await axios.post(
+//
+//		`${backendUrl}/api/admin/products`,
+//		{
+//		  product: {
+//			name,
+//			description,
+//			price,
+//			category,
+//			subCategory,
+//			bestseller,
+//			sizes,
+//		  },
+//		  images: images,
+//		},
+//		{
+//		  headers: {
+//			"Content-Type": "multipart/form-data",
+//		  },
+//		  withCredentials: true,
+//		}
+//	  );
 func (c *ProductController) CreateProduct(ctx *gin.Context) {
+	//get product from multipart/form-data
 	var productInp services.CreateProductInput
 
-	if err := ctx.ShouldBindJSON(&productInp); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	//get images from multipart/form-data
+	images, err := ctx.MultipartForm()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
+	//get product from form-data
+	productInp.Product.Name = ctx.PostForm("name")
+	productInp.Product.Description = ctx.PostForm("description")
+
+	price := ctx.PostForm("price")
+	if price == "" {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("price is required"))
+		return
+	}
+
+	productInp.Product.Price, err = strconv.ParseFloat(price, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("invalid price format"))
+		return
+	}
+
+	productInp.Product.Category = ctx.PostForm("category")
+	productInp.Product.SubCategory = ctx.PostForm("subCategory")
+	productInp.Product.Bestseller = ctx.PostForm("bestseller") == "true"
+
+	// Handle sizes array properly
+	var sizes []string
+	form := ctx.Request.Form
+	for key := range form {
+		if strings.HasPrefix(key, "sizes") {
+			sizes = append(sizes, ctx.PostForm(key))
+		}
+	}
+	productInp.Product.Size = sizes
+
+	productInp.Images = images.File["images"]
+
 	createdProduct, err := c.productService.CreateProduct(&productInp)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 

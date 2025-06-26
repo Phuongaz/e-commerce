@@ -17,6 +17,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	orderService := services.NewOrderService(db, productService)
 	categoryService := services.NewCategoryService(db)
 	cartService := services.NewCartService(db)
+	adminService := services.NewAdminService(db)
 
 	// Initialize controllers
 	userController := controllers.NewUserController(userService)
@@ -24,7 +25,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	orderController := controllers.NewOrderController(orderService)
 	categoryController := controllers.NewCategoryController(categoryService)
 	cartController := controllers.NewCartController(cartService)
-
+	adminController := controllers.NewAdminController(adminService)
 	// Generate admin account
 	err := userService.GenerateAdminAccount()
 	if err != nil {
@@ -79,7 +80,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 
 	// Admin routes
 	admin := r.Group("/api/admin")
-	admin.Use(middleware.AdminAuth())
+	admin.Use(middleware.Auth(), middleware.AdminAuth())
 	{
 		// Product management
 		admin.POST("/products", productController.CreateProduct)
@@ -95,6 +96,8 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 		admin.PUT("/categories/:id", categoryController.UpdateCategory)
 		admin.DELETE("/categories/:id", categoryController.DeleteCategory)
 		admin.GET("/categories", categoryController.ListCategories)
+
+		admin.GET("/stats", adminController.GetAdminStats)
 	}
 
 	// Health check

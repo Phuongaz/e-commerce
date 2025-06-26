@@ -43,7 +43,12 @@ func (c *UserController) Register(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
-
+	token, err := c.userService.Login(input.Email, input.Password)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse(err.Error()))
+		return
+	}
+	setCookie(ctx, token)
 	ctx.JSON(http.StatusCreated, models.NewSuccessResponse(user, "User created successfully"))
 }
 
@@ -101,7 +106,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(user, "Profile fetched successfully"))
 }
 
 func (c *UserController) UpdateProfile(ctx *gin.Context) {

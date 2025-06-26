@@ -5,16 +5,12 @@ services:
     build: ./frontend
     networks:
       - app-network
-    ports:
-      - "3000:80"
     restart: unless-stopped
 
   admin_frontend:
     build: ./AdminPanel
     networks:
       - app-network
-    ports:
-      - "3001:80"
     restart: unless-stopped
 
   backend:

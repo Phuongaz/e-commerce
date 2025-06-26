@@ -40,6 +40,7 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 		userID, ok := claims["user_id"].(string)
+		role, ok := claims["role"].(string)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, models.NewErrorResponse("Invalid user ID in token"))
 			c.Abort()
@@ -47,6 +48,7 @@ func Auth() gin.HandlerFunc {
 		}
 
 		c.Set("userID", userID)
+		c.Set("role", role)
 		c.Next()
 
 		// authHeader := c.GetHeader("Authorization")

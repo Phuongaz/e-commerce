@@ -7,6 +7,7 @@ import (
 	"ecommerce-api/services"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -133,7 +134,21 @@ func (c *OrderController) CancelOrder(ctx *gin.Context) {
 }
 
 func (c *OrderController) GetAllOrders(ctx *gin.Context) {
-	orders, err := c.orderService.GetAllOrders()
+	//fillter by status
+	filter := bson.M{}
+	if status := ctx.Query("status"); status != "" {
+		filter["status"] = status
+	}
+
+	//filter by date: startDate and endDate
+	if startDate := ctx.Query("startDate"); startDate != "" {
+		filter["created_at"] = bson.M{"$gte": startDate}
+	}
+	if endDate := ctx.Query("endDate"); endDate != "" {
+		filter["created_at"] = bson.M{"$lte": endDate}
+	}
+
+	orders, err := c.orderService.GetAllOrders(filter)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse(err.Error()))
 		return
