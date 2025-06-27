@@ -14,7 +14,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { setIsAuthenticated } = useContext(AuthContext);
+  const { setIsAuthenticated, login, logout, getProfile } = useContext(AuthContext);
   useEffect(() => {
     // Set default values after component mounts
     if (adminEmail && adminPassword) {
@@ -26,16 +26,9 @@ const Login = () => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     try {
-      const loginResponse = await axios.post(`${backendUrl}/api/auth/login`, {
-        email,
-        password,
-      }, {
-        withCredentials: true,
-      });
+      const loginResponse = await login(email, password);
 
-      const profileResponse = await axios.get(`${backendUrl}/api/user/profile`, {
-        withCredentials: true,
-      });
+      const profileResponse = await getProfile();
 
       //check if user is admin
       if (profileResponse?.data?.data?.role !== "admin") {

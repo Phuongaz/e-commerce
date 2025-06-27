@@ -1,10 +1,13 @@
-import React, { useState } from "react";
-import axios from "axios";
-import { backendUrl } from "../App.jsx";
+import React, { useState, useContext } from "react";
 import { toast } from "react-toastify";
+import { ProductContext } from "../context/ProductContext.jsx";
+import { useNavigate } from "react-router-dom";
 
-const AddProduct = ({ token }) => {
+const AddProduct = () => {
+  const { createProduct, uploadImages } = useContext(ProductContext);
   const [images, setImages] = useState([]);
+  const [imageIds, setImageIds] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -12,69 +15,86 @@ const AddProduct = ({ token }) => {
   const [subCategory, setSubCategory] = useState("Topwear");
   const [bestseller, setBestseller] = useState(false);
   const [sizes, setSizes] = useState([]);
+  const navigate = useNavigate();
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const uploadedIds = await uploadImages(files);
+      setImageIds((prev) => [...prev, ...uploadedIds]);
+      setImages((prev) => [...prev, ...files]);
+      
+      toast.success("Images uploaded successfully!", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+    } catch (error) {
+      toast.error("Failed to upload images", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+    setImageIds(imageIds.filter((_, i) => i !== index));
+  };
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    try {
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("description", description);
-      formData.append("price", price);
-      formData.append("category", category);
-      formData.append("subCategory", subCategory);
-      formData.append("bestseller", bestseller);
-      formData.append("sizes", JSON.stringify(sizes));
-      images.forEach((image, index) => {
-        formData.append(`image${index + 1}`, image);
+    
+    if (imageIds.length === 0) {
+      toast.error("Please upload at least one image", {
+        position: "top-center",
+        autoClose: 1500,
       });
+      return;
+    }
 
-      const response = await axios.post(
-        `${backendUrl}/api/admin/products`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-        }
-      );
+    try {
+      const productData = {
+        name,
+        description,
+        price: parseFloat(price),
+        category,
+        sub_category: subCategory,
+        bestseller,
+        size: sizes,
+        images: imageIds,
+      };
 
-      if (response?.data?.success) {
-        toast.success(response.data.message, {
+      const response = await createProduct(productData);
+      
+      if (response?.success) {
+        toast.success(response.message, {
           position: "top-center",
           autoClose: 1500,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: false,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
         });
+        
+        // Reset form
         setName("");
         setDescription("");
         setBestseller(false);
         setCategory("Men");
+        setSubCategory("Topwear");
         setImages([]);
+        setImageIds([]);
         setPrice("");
         setSizes([]);
+        navigate("/admin/list-items");
       }
     } catch (error) {
-      toast.error("Failed to add product", {
+      toast.error(error.message || "Failed to add product", {
         position: "top-center",
         autoClose: 1500,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
       });
     }
-  };
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setImages((prev) => [...prev, ...files]);
   };
 
   return (
@@ -86,18 +106,34 @@ const AddProduct = ({ token }) => {
         {/* Image Upload */}
         <div>
           <p className="mb-2 text-gray-600">Hình ảnh sản phẩm</p>
-          <label className="w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center h-32 cursor-pointer bg-gray-50">
-            <input type="file" multiple hidden onChange={handleImageUpload} />
-            {images.length > 0 ? (
-              <div className="flex gap-2">
+          <label className={`w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center h-32 cursor-pointer bg-gray-50 ${uploading ? 'opacity-50' : ''}`}>
+            <input 
+              type="file" 
+              multiple 
+              hidden 
+              onChange={handleImageUpload}
+              disabled={uploading}
+            />
+            {uploading ? (
+              <p className="text-gray-500">Đang tải ảnh...</p>
+            ) : images.length > 0 ? (
+              <div className="flex gap-2 flex-wrap">
                 {images.map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={URL.createObjectURL(img)}
-                    alt="preview"
-                    className="w-20 h-20 object-cover rounded-md"
-                    loading="lazy"
-                  />
+                  <div key={idx} className="relative">
+                    <img
+                      src={URL.createObjectURL(img)}
+                      alt="preview"
+                      className="w-20 h-20 object-cover rounded-md"
+                      loading="lazy"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -213,8 +249,12 @@ const AddProduct = ({ token }) => {
         </div>
 
         {/* Submit Button */}
-        <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
-          Thêm sản phẩm
+        <button 
+          type="submit"
+          disabled={uploading || imageIds.length === 0}
+          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {uploading ? "Đang tải ảnh..." : "Thêm sản phẩm"}
         </button>
       </form>
     </div>

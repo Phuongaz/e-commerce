@@ -9,7 +9,7 @@ export const ShopContext = createContext();
 const ShopContextProvider = (props) => {
   const currency = "VNĐ";
   const delivery_fee = 10;
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8081";
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
@@ -17,6 +17,7 @@ const ShopContextProvider = (props) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
+  
   // Load guest cart from localStorage
   useEffect(() => {
     const guestCart = JSON.parse(localStorage.getItem("guestCart"));
@@ -25,16 +26,25 @@ const ShopContextProvider = (props) => {
     }
   }, []);
 
-  // Fetch user cart if logged in
-  useEffect(async () => {
-    //get profile from backend
-    const response = await axios.get(`${backendUrl}/api/user/profile`, {
-      withCredentials: true,
-    });
-    if (response.data.success) {
-      getUserCart(response.data.userID);
+  // Fetch user cart if logged in - FIXED: Proper async handling
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await axios.get(`${backendUrl}/api/user/profile`, {
+          withCredentials: true,
+        });
+        if (response.data.success) {
+          getUserCart(response.data.userID);
+        }
+      } catch (error) {
+        console.log('User not authenticated or profile fetch failed');
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchUserProfile();
     }
-  }, []);
+  }, [isAuthenticated, backendUrl]);
 
   //----------------- Add to Cart (Handles Both Guest & Authenticated Users) ---------------//
 
@@ -62,7 +72,7 @@ const ShopContextProvider = (props) => {
     }
     setCartItems(cartData);
 
-    if (loginSuccess) {
+    if (isAuthenticated) {
       try {
         const response = await axios.post(
           `${backendUrl}/api/user/cart/add`,
@@ -184,13 +194,14 @@ const ShopContextProvider = (props) => {
         }
       );
       if (response?.data?.success) {
-        setProducts(response.data.products);
+        // Backend returns {success: true, data: products, message: "..."}
+        setProducts(response.data.data || []);
       } else {
-        toast.error(response.data.message);
+        toast.error(response.data.message || "Failed to fetch products");
       }
     } catch (error) {
       console.error(error)
-      toast.error(error.message);
+      toast.error(error.message || "Failed to fetch products");
     }
   };
 

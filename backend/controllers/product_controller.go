@@ -3,11 +3,10 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"ecommerce-api/models"
 	"ecommerce-api/services"
+	"ecommerce-api/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,78 +22,54 @@ func NewProductController(productService *services.ProductService) *ProductContr
 	}
 }
 
-// //       const response = await axios.post(
-//
-//		`${backendUrl}/api/admin/products`,
-//		{
-//		  product: {
-//			name,
-//			description,
-//			price,
-//			category,
-//			subCategory,
-//			bestseller,
-//			sizes,
-//		  },
-//		  images: images,
-//		},
-//		{
-//		  headers: {
-//			"Content-Type": "multipart/form-data",
-//		  },
-//		  withCredentials: true,
-//		}
-//	  );
-func (c *ProductController) CreateProduct(ctx *gin.Context) {
-	//get product from multipart/form-data
-	var productInp services.CreateProductInput
-
-	//get images from multipart/form-data
-	images, err := ctx.MultipartForm()
+// UploadImages handles uploading multiple images and returns their IDs
+func (c *ProductController) UploadImages(ctx *gin.Context) {
+	form, err := ctx.MultipartForm()
 	if err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Failed to parse form data"))
+		return
+	}
+
+	files := form.File["images"]
+	if len(files) == 0 {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("No images provided"))
+		return
+	}
+
+	imageIDs, err := utils.UploadImages(files)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(map[string][]string{
+		"image_ids": imageIDs,
+	}, "Images uploaded successfully"))
+}
+
+func (c *ProductController) CreateProduct(ctx *gin.Context) {
+	var product models.Product
+
+	if err := ctx.ShouldBindJSON(&product); err != nil {
 		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
-	//get product from form-data
-	productInp.Product.Name = ctx.PostForm("name")
-	productInp.Product.Description = ctx.PostForm("description")
-
-	price := ctx.PostForm("price")
-	if price == "" {
-		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("price is required"))
-		return
-	}
-
-	productInp.Product.Price, err = strconv.ParseFloat(price, 64)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("invalid price format"))
-		return
-	}
-
-	productInp.Product.Category = ctx.PostForm("category")
-	productInp.Product.SubCategory = ctx.PostForm("subCategory")
-	productInp.Product.Bestseller = ctx.PostForm("bestseller") == "true"
-
-	// Handle sizes array properly
-	var sizes []string
-	form := ctx.Request.Form
-	for key := range form {
-		if strings.HasPrefix(key, "sizes") {
-			sizes = append(sizes, ctx.PostForm(key))
+	// Validate that image IDs exist
+	for _, imageID := range product.Images {
+		if _, err := utils.GetImage(imageID); err != nil {
+			ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(fmt.Sprintf("Image with ID %s not found", imageID)))
+			return
 		}
 	}
-	productInp.Product.Size = sizes
 
-	productInp.Images = images.File["images"]
-
-	createdProduct, err := c.productService.CreateProduct(&productInp)
+	createdProduct, err := c.productService.CreateProduct(&product)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, createdProduct)
+	ctx.JSON(http.StatusCreated, models.NewSuccessResponse(createdProduct, "Product created successfully"))
 }
 
 func (c *ProductController) ListProducts(ctx *gin.Context) {
@@ -108,7 +83,7 @@ func (c *ProductController) ListProducts(ctx *gin.Context) {
 		products = []*models.Product{}
 	}
 
-	ctx.JSON(http.StatusOK, products)
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(products, "Products fetched successfully"))
 }
 
 func (c *ProductController) GetProduct(ctx *gin.Context) {
@@ -124,31 +99,37 @@ func (c *ProductController) GetProduct(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, product)
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(product, "Product fetched successfully"))
 }
 
 func (c *ProductController) UpdateProduct(ctx *gin.Context) {
 	id, err := primitive.ObjectIDFromHex(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid product ID"))
 		return
 	}
 
 	var product models.Product
 	if err := ctx.ShouldBindJSON(&product); err != nil {
-		fmt.Println(err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
 		return
+	}
+
+	// Validate that image IDs exist
+	for _, imageID := range product.Images {
+		if _, err := utils.GetImage(imageID); err != nil {
+			ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(fmt.Sprintf("Image with ID %s not found", imageID)))
+			return
+		}
 	}
 
 	updatedProduct, err := c.productService.UpdateProduct(id, &product)
 	if err != nil {
-		fmt.Println(err)
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, updatedProduct)
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(updatedProduct, "Product updated successfully"))
 }
 
 func (c *ProductController) DeleteProduct(ctx *gin.Context) {
@@ -163,5 +144,17 @@ func (c *ProductController) DeleteProduct(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Product deleted successfully"))
+}
+
+func (c *ProductController) GetProductImage(ctx *gin.Context) {
+	id := ctx.Param("id")
+	image, err := utils.GetImage(id)
+
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse(err.Error()))
+		return
+	}
+
+	ctx.File(image)
 }

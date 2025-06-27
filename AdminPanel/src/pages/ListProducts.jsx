@@ -1,58 +1,57 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
 import { MdDelete, MdEdit } from "react-icons/md";
+import { ProductContext } from "../context/ProductContext";
 
 const ListProducts = () => {
-  const [listItems, setListItems] = useState([]);
+  const { products, setProducts, createProduct, updateProduct, deleteProduct, getProduct, getProducts } = useContext(ProductContext);
   const navigate = useNavigate();
   const location = useLocation();
 
-
-  const fetchList = async () => {
-    try {
-      const response = await axios.get(
-        `${backendUrl}/api/products`,
-        {
-          withCredentials: true,
-        }
-      );
-      if (response?.data?.success) {
-        setListItems(response.data.products);
-      } else {
-        toast.error(response.data.message, {
-          position: "top-center",
-          autoClose: 1500,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: false,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to fetch products.", {
-        position: "top-center",
-        autoClose: 1500,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-    }
-  };
+  // const fetchList = async () => {
+  //   try {
+  //     const response = await axios.get(
+  //       `${backendUrl}/api/products`,
+  //       {
+  //         withCredentials: true,
+  //       }
+  //     );
+  //     console.log(response);
+  //     if (response?.data?.success) {
+  //       setListItems(response.data.data);
+  //     } else {
+  //       toast.error(response.data.message, {
+  //         position: "top-center",
+  //         autoClose: 1500,
+  //         hideProgressBar: false,
+  //         closeOnClick: false,
+  //         pauseOnHover: false,
+  //         draggable: true,
+  //         progress: undefined,
+  //         theme: "light",
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //     toast.error("Failed to fetch products.", {
+  //       position: "top-center",
+  //       autoClose: 1500,
+  //       hideProgressBar: false,
+  //       closeOnClick: false,
+  //       pauseOnHover: false,
+  //       draggable: true,
+  //       progress: undefined,
+  //       theme: "light",
+  //     });
+  //   }
+  // };
 
   const removeProduct = async (id) => {
     try {
-      const response = await axios.delete(`${backendUrl}/api/admin/products/${id}`, {
-        withCredentials: true,
-      });
+      const response = await deleteProduct(id);
       if (response?.data?.success) {
         toast.success("Product removed successfully!", {
           position: "top-center",
@@ -64,7 +63,7 @@ const ListProducts = () => {
           progress: undefined,
           theme: "light",
         });
-        await fetchList();
+        await getProducts();
       } else {
         toast.error(response.data.message, {
           position: "top-center",
@@ -93,10 +92,10 @@ const ListProducts = () => {
   };
 
 useEffect(() => {
-  fetchList(); // Always fetch on mount
+  getProducts(); // Always fetch on mount
 
   if (location.state?.updated) {
-    fetchList(); // Fetch again if update signal exists
+    getProducts(); // Fetch again if update signal exists
     window.history.replaceState({}, document.title); // Clear state after fetching
   }
 }, [location]);
@@ -118,7 +117,7 @@ useEffect(() => {
             </tr>
           </thead>
           <tbody>
-            {listItems.map((item, index) => (
+            {products.map((item, index) => (
               <tr
                 key={item._id}
                 className={`border-b ${
@@ -126,12 +125,21 @@ useEffect(() => {
                 } hover:bg-gray-50 transition`}
               >
                 <td className="py-3 px-4">
-                  <img
+                  {item?.images?.map((image, index) => (
+                    <img
+                      key={index}
+                      className="w-12 h-12 object-cover rounded-md border"
+                      src={`${backendUrl}/api/product/image/${image}`}
+                      alt="product"
+                      loading="lazy"
+                    />
+                  ))}
+                  {/* <img
                     className="w-12 h-12 object-cover rounded-md border"
-                    src={item?.image[0]}
+                    src={item?.images[0]}
                     alt="product"
                     loading="lazy"
-                  />
+                  /> */}
                 </td>
                 <td className="py-3 px-4">{item?.name}</td>
                 <td className="py-3 px-4">
@@ -145,7 +153,7 @@ useEffect(() => {
                   {/* Edit Button */}
                   <button
                     className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                    onClick={() => navigate(`/update-item/${item._id}`)}
+                    onClick={() => navigate(`/admin/update-item/${item._id}`)}
                   >
                     <MdEdit size={20} />
                   </button>
@@ -163,7 +171,7 @@ useEffect(() => {
           </tbody>
         </table>
 
-        {listItems.length === 0 && (
+        {products.length === 0 && (
           <p className="text-center text-gray-600 mt-4">
             Không có sản phẩm nào.
           </p>

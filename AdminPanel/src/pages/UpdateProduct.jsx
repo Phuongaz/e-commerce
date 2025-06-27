@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
-import { backendUrl } from "../App.jsx";
+import { ProductContext } from "../context/ProductContext.jsx";
 
-const UpdateProduct = ({ token }) => {
-  const { id } = useParams(); // Get product ID from URL
+const UpdateProduct = () => {
+  const { getProduct, updateProduct, uploadImages } = useContext(ProductContext);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const { id } = useParams();
+  const navigate = useNavigate();
+
   const [product, setProduct] = useState(null);
-  const [existingImages, setExistingImages] = useState([]); // Store existing images from backend
-  const [newImages, setNewImages] = useState([]); // Store newly added images
+  const [existingImageIds, setExistingImageIds] = useState([]);
+  const [newImages, setNewImages] = useState([]);
+  const [newImageIds, setNewImageIds] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Form states
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -16,120 +24,122 @@ const UpdateProduct = ({ token }) => {
   const [subCategory, setSubCategory] = useState("Topwear");
   const [bestseller, setBestseller] = useState(false);
   const [sizes, setSizes] = useState([]);
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
 
   // Fetch product details
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`${backendUrl}/api/product/${id}`, {
-          headers: { admintoken: token },
-        });
-
-        if (response.data.success) {
-          const data = response.data.product;
+        const data = await getProduct(id);
+        
+        if (data) {
           setProduct(data);
-          setName(data.name);
-          setDescription(data.description);
-          setPrice(data.price);
-          setCategory(data.category);
-          setSubCategory(data.subCategory);
-          setBestseller(data.bestseller);
-          setSizes(data.sizes || []);
-          setExistingImages(data.image || []); // Set existing images
+          setName(data.name || "");
+          setDescription(data.description || "");
+          setPrice(data.price || "");
+          setCategory(data.category || "Men");
+          setSubCategory(data.sub_category || "Topwear");
+          setBestseller(data.bestseller || false);
+          setSizes(data.size || []);
+          setExistingImageIds(data.images || []);
         }
       } catch (error) {
         toast.error("Failed to fetch product details", {
           position: "top-center",
           autoClose: 1500,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: false,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
         });
       }
     };
 
-    fetchProduct();
-  }, [id, token]);
+    if (id) {
+      fetchProduct();
+    }
+  }, [id]);
+
+  // Generate image URL from image ID
+  const getImageUrl = (imageId) => {
+    return `${backendUrl}/api/product/image/${imageId}`;
+  };
 
   // Handle new image uploads
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    setNewImages([...newImages, ...files]);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const uploadedIds = await uploadImages(files);
+      setNewImageIds((prev) => [...prev, ...uploadedIds]);
+      setNewImages((prev) => [...prev, ...files]);
+      
+      toast.success("Images uploaded successfully!", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+    } catch (error) {
+      toast.error("Failed to upload images", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
-  // Remove image from new uploads
+  // Remove existing image
+  const removeExistingImage = (index) => {
+    setExistingImageIds(existingImageIds.filter((_, i) => i !== index));
+  };
+
+  // Remove new image
   const removeNewImage = (index) => {
     setNewImages(newImages.filter((_, i) => i !== index));
-  };
-
-  // Remove existing image (to be deleted from backend)
-  const removeExistingImage = (index) => {
-    setExistingImages(existingImages.filter((_, i) => i !== index));
+    setNewImageIds(newImageIds.filter((_, i) => i !== index));
   };
 
   // Handle product update
   const handleUpdateProduct = async (e) => {
     e.preventDefault();
 
+    const allImageIds = [...existingImageIds, ...newImageIds];
+    
+    if (allImageIds.length === 0) {
+      toast.error("Please provide at least one image", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("description", description);
-      formData.append("price", price);
-      formData.append("category", category);
-      formData.append("subCategory", subCategory);
-      formData.append("bestseller", bestseller);
-      formData.append("sizes", JSON.stringify(sizes));
 
-      // Add existing images that the user kept
-      formData.append("existingImages", JSON.stringify(existingImages));
+      const productData = {
+        name,
+        description,
+        price: parseFloat(price),
+        category,
+        sub_category: subCategory,
+        bestseller,
+        size: sizes,
+        images: allImageIds,
+      };
 
-      // Add new images
-      newImages.forEach((image, index) => {
-        formData.append(`newImage${index + 1}`, image);
-      });
-
-      const response = await axios.put(
-        `${backendUrl}/api/product/update/${id}`,
-        formData,
-        {
-          headers: {
-            admintoken: token,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      if (response.data.success) {
+      const response = await updateProduct(id, productData);
+      
+      if (response?.success) {
         toast.success("Product updated successfully!", {
           position: "top-center",
           autoClose: 1500,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: false,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
         });
+        
         setTimeout(() => {
-          navigate("/list-items", { state: { updated: true } }); // Navigate with a state signal
+          navigate("/admin/list-items", { state: { updated: true } });
         }, 1000);
       }
     } catch (error) {
-      toast.error("Failed to update product", {
+      toast.error(error.message || "Failed to update product", {
         position: "top-center",
         autoClose: 1500,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
       });
     } finally {
       setLoading(false);
@@ -144,48 +154,61 @@ const UpdateProduct = ({ token }) => {
         Cập nhật sản phẩm
       </h2>
       <form onSubmit={handleUpdateProduct} className="space-y-5">
-        {/* Image Upload */}
+        {/* Existing Images */}
         <div>
           <p className="mb-2 text-gray-600">Hình ảnh hiện tại</p>
-          <div className="flex gap-2 flex-wrap">
-            {existingImages.map((img, idx) => (
-              <div key={idx} className="relative w-24 h-24">
-                <img
-                  src={img}
-                  alt="Existing"
-                  className="w-full h-full object-cover rounded-md"
-                  loading="lazy"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeExistingImage(idx)}
-                  className="absolute top-0 right-0 bg-red-500 text-white px-1 rounded-full text-xs"
-                >
-                  ✖
-                </button>
-              </div>
-            ))}
-          </div>
+          {existingImageIds.length > 0 ? (
+            <div className="flex gap-2 flex-wrap mb-4">
+              {existingImageIds.map((imageId, idx) => (
+                <div key={idx} className="relative">
+                  <img
+                    src={getImageUrl(imageId)}
+                    alt="Existing"
+                    className="w-20 h-20 object-cover rounded-md"
+                    loading="lazy"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(idx)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400 mb-4">Không có hình ảnh hiện tại</p>
+          )}
 
-          <p className="mb-2 text-gray-600 mt-4">Tải lên hình ảnh mới</p>
-          <label className="w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center h-32 cursor-pointer bg-gray-50">
-            <input type="file" multiple hidden onChange={handleImageUpload} />
-            {newImages.length > 0 ? (
-              <div className="flex gap-2">
+          {/* Upload New Images */}
+          <p className="mb-2 text-gray-600">Tải lên hình ảnh mới</p>
+          <label className={`w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center h-32 cursor-pointer bg-gray-50 ${uploading ? 'opacity-50' : ''}`}>
+            <input 
+              type="file" 
+              multiple 
+              hidden 
+              onChange={handleImageUpload}
+              disabled={uploading}
+            />
+            {uploading ? (
+              <p className="text-gray-500">Đang tải ảnh...</p>
+            ) : newImages.length > 0 ? (
+              <div className="flex gap-2 flex-wrap">
                 {newImages.map((img, idx) => (
-                  <div key={idx} className="relative w-20 h-20">
+                  <div key={idx} className="relative">
                     <img
                       src={URL.createObjectURL(img)}
-                      alt="New product images"
-                      className="w-full h-full object-cover rounded-md"
+                      alt="New preview"
+                      className="w-20 h-20 object-cover rounded-md"
                       loading="lazy"
                     />
                     <button
                       type="button"
                       onClick={() => removeNewImage(idx)}
-                      className="absolute top-0 right-0 bg-red-500 text-white px-1 rounded-full"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
                     >
-                      ✖
+                      ×
                     </button>
                   </div>
                 ))}
@@ -231,6 +254,34 @@ const UpdateProduct = ({ token }) => {
           ></textarea>
         </div>
 
+        {/* Category & SubCategory */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="mb-1 text-gray-600">Danh mục</p>
+            <select
+              className="w-full border px-3 py-2 rounded-lg focus:ring-1 focus:outline-none focus:border-blue-500"
+              onChange={(e) => setCategory(e.target.value)}
+              value={category}
+            >
+              <option value="Men">Men</option>
+              <option value="Women">Women</option>
+              <option value="Kids">Kids</option>
+            </select>
+          </div>
+          <div>
+            <p className="mb-1 text-gray-600">Danh mục con</p>
+            <select
+              className="w-full border px-3 py-2 rounded-lg focus:ring-1 focus:outline-none focus:border-blue-500"
+              onChange={(e) => setSubCategory(e.target.value)}
+              value={subCategory}
+            >
+              <option value="Topwear">Topwear</option>
+              <option value="Bottomwear">Bottomwear</option>
+              <option value="Winterwear">Winterwear</option>
+            </select>
+          </div>
+        </div>
+
         {/* Sizes */}
         <div>
           <p className="mb-2 text-gray-600">Kích cỡ</p>
@@ -257,12 +308,27 @@ const UpdateProduct = ({ token }) => {
           </div>
         </div>
 
+        {/* Bestseller Toggle */}
+        <div className="flex items-center justify-between">
+          <p className="text-gray-600">Đánh dấu là Bestseller</p>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={bestseller}
+              onChange={() => setBestseller((prev) => !prev)}
+            />
+            <div className="w-11 h-6 bg-gray-300 peer-focus:ring-1 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-700"></div>
+          </label>
+        </div>
+
         {/* Submit Button */}
         <button
-          disabled={loading}
-          className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition"
+          type="submit"
+          disabled={loading || uploading}
+          className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Cập nhật sản phẩm
+          {loading ? "Đang cập nhật..." : uploading ? "Đang tải ảnh..." : "Cập nhật sản phẩm"}
         </button>
       </form>
     </div>

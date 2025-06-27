@@ -11,7 +11,9 @@ const LatestCollections = () => {
   const [latestProducts, setLatestProducts] = useState([]);
 
   useEffect(() => {
-    setLatestProducts(products.slice(0, 25));
+    if (products && Array.isArray(products)) {
+      setLatestProducts(products.slice(0, 25));
+    }
   }, [products]);
 
   const settings = {
@@ -62,7 +64,7 @@ const LatestCollections = () => {
             <div key={index} className="px-4">
               <ProductItem
                 id={item._id}
-                image={item.image}
+                image={item.images}
                 name={item.name}
                 price={item.price}
               />

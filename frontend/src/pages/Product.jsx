@@ -7,16 +7,25 @@ import RelatedProducts from "../components/RelatedProducts";
 
 const Product = () => {
   const { productId } = useParams();
-  const { products, currency, addToCart } = useContext(ShopContext);
+  const { products, currency, addToCart, backendUrl } = useContext(ShopContext);
   const [productData, setProductData] = useState(false);
   const [image, setImage] = useState("");
   const [size, setSize] = useState("");
+
+  // Generate image URL from image ID using the API endpoint
+  const getImageUrl = (imageId) => {
+    if (!imageId) return '';
+    return `${backendUrl}/api/product/image/${imageId}`;
+  };
 
   const fetchProductData = async () => {
     products.map((item) => {
       if (item._id === productId) {
         setProductData(item);
-        setImage(item.image[0]);
+        // Set first image ID from images array
+        if (item.images && item.images.length > 0) {
+          setImage(getImageUrl(item.images[0]));
+        }
         return null;
       }
     });
@@ -24,7 +33,7 @@ const Product = () => {
 
   useEffect(() => {
     fetchProductData();
-  }, [productId]);
+  }, [productId, products]);
 
   return productData ? (
     <div className="border-t-2 pt-10 transition-opacity ease-in duration-1000 opacity-100 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
@@ -33,13 +42,13 @@ const Product = () => {
         {/* ----------------product images ---------------- */}
         <div className="flex-1 flex flex-col-reverse gap-3 sm:flex-row">
           <div className="flex sm:flex-col overflow-x-auto sm:overflow-y-scroll justify-between sm:justify-normal sm:w-[18.7%] w-full">
-            {productData.image.map((item, index) => (
+            {productData.images && productData.images.map((imageId, index) => (
               <img
-                src={item}
+                src={getImageUrl(imageId)}
                 key={index}
                 alt="product"
                 className="w-[24%] sm:w-full sm:mb-3 flex-shrink cursor-pointer"
-                onClick={() => setImage(item)}
+                onClick={() => setImage(getImageUrl(imageId))}
               />
             ))}
           </div>
@@ -67,7 +76,7 @@ const Product = () => {
           <div className="flex flex-col gap-4 mt-4">
             <p>Chọn kích cỡ</p>
             <div className="flex gap-2">
-              {productData.sizes.map((item, index) => (
+              {productData.size && productData.size.map((item, index) => (
                 <button
                   onClick={() => setSize(item)}
                   className={`border py-2 px-4 bg-gray-100 ${
@@ -102,7 +111,7 @@ const Product = () => {
       {/* ------------ display related products -------------- */}
       <RelatedProducts
         category={productData.category}
-        subCategory={productData.subCategory}
+        subCategory={productData.sub_category}
       />
     </div>
   ) : (

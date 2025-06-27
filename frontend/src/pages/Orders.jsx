@@ -85,9 +85,9 @@ const Orders = () => {
             >
               <div className="flex items-start gap-6 text-sm">
                 <img
-                  src={item.image[0]}
+                  src={`${backendUrl}/api/product/image/${item.images[0]}`}
                   alt="product"
-                  className="w-16 sm:w-20 "
+                  className="w-16 sm:w-20 object-cover rounded"
                   loading="lazy"
                 />
                 <div>

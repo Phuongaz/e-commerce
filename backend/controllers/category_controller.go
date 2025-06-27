@@ -30,7 +30,7 @@ func (c *CategoryController) CreateCategory(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(201, createdCategory)
+	ctx.JSON(201, models.NewSuccessResponse(createdCategory, "Category created successfully"))
 }
 
 func (c *CategoryController) ListCategories(ctx *gin.Context) {
@@ -40,7 +40,7 @@ func (c *CategoryController) ListCategories(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, categories)
+	ctx.JSON(200, models.NewSuccessResponse(categories, "Categories fetched successfully"))
 }
 
 func (c *CategoryController) GetCategory(ctx *gin.Context) {
@@ -56,7 +56,7 @@ func (c *CategoryController) GetCategory(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, category)
+	ctx.JSON(200, models.NewSuccessResponse(category, "Category fetched successfully"))
 }
 
 func (c *CategoryController) UpdateCategory(ctx *gin.Context) {
@@ -74,7 +74,7 @@ func (c *CategoryController) UpdateCategory(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, updatedCategory)
+	ctx.JSON(200, models.NewSuccessResponse(updatedCategory, "Category updated successfully"))
 }
 
 func (c *CategoryController) DeleteCategory(ctx *gin.Context) {
@@ -85,5 +85,5 @@ func (c *CategoryController) DeleteCategory(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(204, nil)
+	ctx.JSON(204, models.NewSuccessResponse(nil, "Category deleted successfully"))
 }

@@ -12,11 +12,13 @@ const BestSellerProducts = () => {
     const [bestSeller, setBestSeller] = useState([]);
 
     useEffect(() => {
-        const bestProduct = products.filter((item) => (
-            item.bestseller
-        ));
-   
-        setBestSeller(bestProduct.slice(0, 15));
+        if (products && Array.isArray(products)) {
+            const bestProduct = products.filter((item) => (
+                item.bestseller
+            ));
+       
+            setBestSeller(bestProduct.slice(0, 15));
+        }
     }, [products])
 
     const settings = {
@@ -66,8 +68,8 @@ const BestSellerProducts = () => {
             <div key={index} className="px-4">
               <ProductItem
                 id={item._id}
+                image={item.images}
                 name={item.name}
-                image={item.image}
                 price={item.price}
               />
             </div>

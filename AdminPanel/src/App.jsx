@@ -29,20 +29,20 @@ const App = () => {
             <Sidebar />
             <div className="w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base">
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/admin" element={<Home />} />
                 <Route
-                  path="/add-item"
+                  path="/admin/add-item"
                   element={<AddProduct />}
                 />
                 <Route
-                  path="/update-item/:id"
+                  path="/admin/update-item/:id"
                   element={<UpdateProduct />}
                 />
                 <Route
-                  path="/list-items"
+                  path="/admin/list-items"
                   element={<ListProducts />}
                 />
-                <Route path="/orders" element={<Orders />} />
+                <Route path="/admin/orders" element={<Orders />} />
               </Routes>
             </div>
           </div>

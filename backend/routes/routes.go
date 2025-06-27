@@ -52,6 +52,8 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 		public.GET("/products/:id", productController.GetProduct)
 		public.GET("/categories", categoryController.ListCategories)
 		public.GET("/categories/:id", categoryController.GetCategory)
+
+		public.GET("product/image/:id", productController.GetProductImage)
 	}
 
 	protected := r.Group("/api")
@@ -82,6 +84,9 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	admin := r.Group("/api/admin")
 	admin.Use(middleware.Auth(), middleware.AdminAuth())
 	{
+		// Image upload
+		admin.POST("/upload-images", productController.UploadImages)
+
 		// Product management
 		admin.POST("/products", productController.CreateProduct)
 		admin.PUT("/products/:id", productController.UpdateProduct)

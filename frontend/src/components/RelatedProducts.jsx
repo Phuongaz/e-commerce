@@ -13,7 +13,7 @@ const RelatedProducts = ({ category, subCategory }) => {
 
       productsCopy = productsCopy.filter((item) => category === item.category);
       productsCopy = productsCopy.filter(
-        (item) => subCategory === item.subCategory
+        (item) => subCategory === item.sub_category
       );
 
       setRelated(productsCopy.slice(0, 5));
@@ -31,7 +31,7 @@ const RelatedProducts = ({ category, subCategory }) => {
           <ProductItem
             key={index}
             id={item._id}
-            image={item.image}
+            image={item.images}
             name={item.name}
             price={item.price}
           />

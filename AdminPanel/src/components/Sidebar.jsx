@@ -30,7 +30,7 @@ const Sidebar = () => {
         </NavLink>}
 
         <NavLink
-          to="/add-item"
+          to="/admin/add-item"
           key="add-item"
           className={({ isActive }) =>
             `flex items-center gap-3 px-4 py-3 rounded-md transition duration-300 ${
@@ -45,7 +45,7 @@ const Sidebar = () => {
         </NavLink>
 
         <NavLink
-          to="/list-items"
+          to="/admin/list-items"
           key="list-items"
           className={({ isActive }) =>
             `flex items-center gap-3 px-4 py-3 rounded-md transition duration-300 ${
@@ -60,7 +60,7 @@ const Sidebar = () => {
         </NavLink>
 
         <NavLink
-          to="/orders"
+          to="/admin/orders"
           key="orders"
           className={({ isActive }) =>
             `flex items-center gap-3 px-4 py-3 rounded-md transition duration-300 ${

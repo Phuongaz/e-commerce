@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [isAuthenticated, setIsAuthenticated] = useState(null); 
   const checkAuthValidity = async () => {
-
     try {
       //send request to backend to verify token
       const response = await axios.get(`${backendUrl}/api/user/profile`, {
@@ -36,11 +35,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const login = async (email, password) => {
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/auth/login`,
+        {email, password},
+        {withCredentials: true}
+      );
+      if (response.data.success === true) {
+        setIsAuthenticated(true);
+        navigate("/");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  }
+
+  const logout = async () => {
+    try {
+      const response = await axios.post(`${backendUrl}/api/auth/logout`, {}, {withCredentials: true});
+      if (response.data.success === true) {
+        setIsAuthenticated(false);
+        navigate("/admin/login");
+      } else {
+        toast.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  }
+
   useEffect(() => {
     if (isAuthenticated === null) {
       checkAuthValidity();
     }
   }, [isAuthenticated]);
 
-  return <AuthContext.Provider value={{isAuthenticated, setIsAuthenticated}}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{isAuthenticated, setIsAuthenticated, login}}>{children}</AuthContext.Provider>;
 };

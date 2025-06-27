@@ -59,6 +59,9 @@ func main() {
 		log.Fatal("Error setting trusted proxies:", err)
 	}
 
+	// Serve static files from uploads directory
+	r.Static("/uploads", "./uploads")
+
 	routes.SetupRoutes(r, db)
 
 	port := os.Getenv("PORT")

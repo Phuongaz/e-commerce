@@ -3,9 +3,7 @@ package services
 import (
 	"context"
 	"ecommerce-api/models"
-	"ecommerce-api/utils"
 	"errors"
-	"mime/multipart"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,27 +22,18 @@ func NewProductService(db *mongo.Database) *ProductService {
 	}
 }
 
-type CreateProductInput struct {
-	Product models.Product          `json:"product" binding:"required"`
-	Images  []*multipart.FileHeader `form:"images" binding:"required"` //non-required
-}
+func (s *ProductService) CreateProduct(product *models.Product) (*models.Product, error) {
+	// Set timestamps
+	product.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+	product.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-func (s *ProductService) CreateProduct(productInp *CreateProductInput) (*models.Product, error) {
-	//upload images
-
-	paths, err := utils.UploadImages(productInp.Images)
-	if err != nil {
-		return nil, err
-	}
-	productInp.Product.Images = paths
-
-	result, err := s.collection.InsertOne(context.Background(), productInp.Product)
+	result, err := s.collection.InsertOne(context.Background(), product)
 	if err != nil {
 		return nil, err
 	}
 
-	productInp.Product.ID = result.InsertedID.(primitive.ObjectID)
-	return &productInp.Product, nil
+	product.ID = result.InsertedID.(primitive.ObjectID)
+	return product, nil
 }
 
 func (s *ProductService) ListProducts() ([]*models.Product, error) {
@@ -77,12 +66,16 @@ func (s *ProductService) GetProduct(id primitive.ObjectID) (*models.Product, err
 func (s *ProductService) UpdateProduct(id primitive.ObjectID, product *models.Product) (*models.Product, error) {
 	update := bson.M{
 		"$set": bson.M{
-			"name":        product.Name,
-			"description": product.Description,
-			"price":       product.Price,
-			"stock":       product.Stock,
-			"images":      product.Images,
-			"updated_at":  time.Now(),
+			"name":         product.Name,
+			"description":  product.Description,
+			"price":        product.Price,
+			"stock":        product.Stock,
+			"size":         product.Size,
+			"category":     product.Category,
+			"sub_category": product.SubCategory,
+			"bestseller":   product.Bestseller,
+			"images":       product.Images,
+			"updated_at":   primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -95,6 +88,9 @@ func (s *ProductService) UpdateProduct(id primitive.ObjectID, product *models.Pr
 
 	var updatedProduct models.Product
 	if err := result.Decode(&updatedProduct); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.New("product not found")
+		}
 		return nil, err
 	}
 

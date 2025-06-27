@@ -3,7 +3,22 @@ import { ShopContext } from "../context/Shopcontext";
 import { Link } from "react-router-dom";
 
 const ProductItem = ({ id, image, name, price }) => {
-  const { currency } = useContext(ShopContext);
+  const { currency, backendUrl } = useContext(ShopContext);
+
+  // Generate image URL from image ID using the API endpoint
+  const getImageUrl = (imageId) => {
+    if (!imageId) return '';
+    // Use the backend API endpoint to get image by ID
+    return `${backendUrl}/api/product/image/${imageId}`;
+  };
+
+  // Default image when no product image is available
+  const defaultImage = "https://via.placeholder.com/400x300/F5F5DC/2C1810?text=No+Image";
+  
+  // Get first image ID or use default
+  const productImage = (image && Array.isArray(image) && image.length > 0) 
+    ? getImageUrl(image[0]) 
+    : defaultImage;
 
   return (
     <Link
@@ -13,8 +28,11 @@ const ProductItem = ({ id, image, name, price }) => {
       <div className="overflow-hidden rounded-t-lg">
         <img
           className="transition ease-in-out duration-300 object-cover w-full h-72 sm:h-80 md:h-72 lg:h-64"
-          src={image[0]}
+          src={productImage}
           alt={name}
+          onError={(e) => {
+            e.target.src = defaultImage; // Fallback if image fails to load
+          }}
         />
       </div>
       <div className="p-4">

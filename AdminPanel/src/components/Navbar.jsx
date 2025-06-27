@@ -14,7 +14,7 @@ const Navbar = () => {
 
   return (
     <div className="flex items-center justify-between py-2 px-[4%] bg-gray-50">
-      <Link to="/" className="w-[max(10%,110px)]">
+      <Link to="/admin" className="w-[max(10%,110px)]">
         <img src={assets.logo} alt="logo" loading="lazy" />
       </Link>
 
