@@ -1,7 +1,7 @@
 import React from "react";
 import { assets } from "../assets/frontend_assets/assets";
 import { FaPhoneAlt, FaEnvelope, FaFacebookF, FaMapMarkedAlt } from "react-icons/fa";
-import { Link } from "react-router-dom"; // Assuming you're using React Router
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const year = new Date().getFullYear();

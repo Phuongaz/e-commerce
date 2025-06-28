@@ -2,7 +2,9 @@ import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { FaUser, FaEdit, FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
-import { ShopContext } from "../context/Shopcontext";
+import { AuthContext } from "../context/AuthContext";
+import { Navigate } from "react-router-dom";
+import { getProfile, updateProfile } from "../api/user";
 
 const MyProfile = () => {
   const [user, setUser] = useState(null);
@@ -10,17 +12,16 @@ const MyProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false); // State for loader
-  const { backendUrl, navigate, loginSuccess } = useContext(ShopContext);
+  const { navigate, isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
-    if (!loginSuccess) return;
+    if (!isAuthenticated) return;
 
     const fetchUserData = async () => {
       try {
-        const response = await axios.get(`${backendUrl}/api/user/profile`, {
-          withCredentials: true,
-        });
-        setUser(response.data);
+        const response = await getProfile();
+        console.log(response);
+        setUser(response.data.data);
       } catch (error) {
         toast.error("Failed to load profile. Please log in again.", {
           position: "top-center",
@@ -36,15 +37,11 @@ const MyProfile = () => {
     };
 
     fetchUserData();
-  }, [loginSuccess]);
+  }, [isAuthenticated]);
 
   const handleEmailChange = async () => {
     try {
-      const response = await axios.put(
-        `${backendUrl}/api/user/profile`,
-        { email: newEmail },
-        { withCredentials: true }
-      );
+      const response = await updateProfile({ email: newEmail });
       toast.success("Email updated successfully", {
         position: "top-center",
         autoClose: 1500,
@@ -71,80 +68,35 @@ const MyProfile = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true); // Show loader
-    try {
-      await axios.delete(`${backendUrl}/api/user/logout`, {
-        withCredentials: true,
-      });
-      setLoginSuccess(false);
-      toast.success("Account deleted successfully", {
-        position: "top-center",
-        autoClose: 1500,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      setIsModalOpen(false);
-
-      setTimeout(() => {
-        navigate("/"); // Navigate first
-        window.location.reload();
-      }, 1000);
-    } catch (error) {
-      toast.error("Failed to delete account", {
-        position: "top-center",
-        autoClose: 1500,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-    } finally {
-      setIsDeleting(false); // Hide loader
-    }
-  };
-
-  if (!loginSuccess) {
-    return (
-      <div className="text-center text-black font-semibold mt-20">
-        Please log in to view your profile.
-      </div>
-    );
-  }
+  if (!isAuthenticated) return <Navigate to="/" replace />;
 
   if (!user)
     return (
       <div className="text-center text-black font-semibold mt-20">
-        Loading Profile...
+        Đang tải thông tin tài khoản...
       </div>
     );
 
   return (
     <div className="flex items-center justify-center py-10  px-4">
       <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md border border-gray-200">
-        <h2 className="text-2xl font-bold text-black flex items-center gap-2 mb-6 border-b pb-4">
-          <FaUser className="text-black" /> My Profile
+        <h2 className="text-2xl montserrat-regular text-[#8B4513] flex items-center gap-2 mb-6 border-b pb-4">
+          <FaUser className="text-black" /> Thông tin tài khoản
         </h2>
 
         <div className="space-y-6">
           <div className="text-lg font-medium flex flex-col">
-            <span className="text-gray-500">Name</span>
-            <span className="text-gray-800 bg-gray-100 font-normal p-2 rounded-md">
+            <span className="text-[#8B4513]">Họ và tên</span>
+            <span className="text-[#8B4513] bg-gray-100 font-normal p-2 rounded-md">
               {user.name}
             </span>
           </div>
 
           <div className="text-lg font-medium flex flex-col">
-            <span className="text-gray-500">Email</span>
+            <span className="text-[#8B4513]">Email</span>
             {!isEditing ? (
               <div className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
-                <span className="text-gray-800 font-normal">{user.email}</span>
+                <span className="text-[#8B4513] font-normal">{user.email}</span>
                 <button
                   onClick={() => setIsEditing(true)}
                   className="text-blue-700 hover:text-blue-900 transition"
@@ -172,40 +124,39 @@ const MyProfile = () => {
           </div>
         </div>
 
-        <button
+        {/* <button
           onClick={() => setIsModalOpen(true)}
-          className="mt-8 w-full bg-red-600 text-white px-4 py-2 rounded-md flex items-center justify-center gap-2 hover:bg-red-700 transition-all duration-200 shadow-md"
+          className="mt-8 w-full bg-[#8B4513] text-white px-4 py-2 rounded-md flex items-center justify-center gap-2 hover:bg-[#2C1810] transition-all duration-200 shadow-md"
         >
-          <FaTrash /> Delete Account
-        </button>
+          <FaTrash /> Xóa tài khoản
+        </button> */}
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 className="text-lg font-semibold mb-4">Are you sure?</h3>
+            <h3 className="text-lg font-semibold mb-4">Bạn có chắc chắn muốn xóa tài khoản?</h3>
             <p className="text-gray-600 mb-6">
-              Do you really want to delete your account? This action cannot be
-              undone.
+              Bạn có chắc chắn muốn xóa tài khoản? Thao tác này không thể được hoàn tác.
             </p>
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition"
               >
-                Cancel
+                Hủy
               </button>
               <button
-                onClick={handleDeleteAccount}
+                onClick={() => setIsModalOpen(false)}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition flex items-center gap-2"
                 disabled={isDeleting}
               >
                 {isDeleting ? (
-                  <>Deleting...</>
+                  <>Đang xóa...</>
                 ) : (
                   <>
                     <FaTrash />
-                    Yes, Delete
+                    Xác nhận xóa
                   </>
                 )}
               </button>

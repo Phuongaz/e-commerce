@@ -5,8 +5,10 @@ import { assets } from "../assets/frontend_assets/assets";
 import CartTotal from "../components/CartTotal";
 import { toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
-import axios from "axios";
 import { IoIosArrowForward } from "react-icons/io";
+import { backendUrl } from "../api/axiosInstance";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
 const Cart = () => {
   const {
@@ -14,38 +16,50 @@ const Cart = () => {
     currency,
     cartItems,
     updateQuantity,
-    navigate,
     loading,
     setLoading,
-    token,
-    backendUrl,
+    deleteItemFromCart,
   } = useContext(ShopContext);
+  const { isAuthenticated } = useContext(AuthContext);
   const [cartData, setCartData] = useState([]);
+  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (products.length > 0) {
-      const tempData = Object.entries(cartItems).flatMap(([productId, sizes]) =>
-        Object.entries(sizes)
-          .filter(([size, quantity]) => quantity > 0)
-          .map(([size, quantity]) => ({ _id: productId, size, quantity }))
-      );
+    if (products.length > 0 && Array.isArray(cartItems)) {
+      // cartItems is now an array of objects: [{product_id, quantity, size}, ...]
+      const tempData = cartItems
+        .filter((item) => item.quantity > 0) // Filter out items with 0 quantity
+        .map((item) => ({
+          _id: item.product_id, // Map product_id to _id for consistency
+          size: item.size,
+          quantity: item.quantity
+        }));
+      
       setCartData(tempData);
     }
   }, [cartItems, products]);
 
-  // Handle navigation change and set loading to false
+  const getFirstProductImage = (productId) => {
+    const product = products.find((product) => product._id === productId);
+    
+    if (product && product.images && product.images.length > 0) {
+      return `${backendUrl}/api/product/image/${product.images[0]}`;
+    }
+    
+    // Return default image if product or images not found
+    return "https://png.pngtree.com/png-vector/20190820/ourmid/pngtree-no-image-vector-illustration-isolated-png-image_1694547.jpg";
+  };
+
   const handleNavigation = (path) => {
     setLoading(true);
     navigate(path);
     setTimeout(() => setLoading(false), 500);
   };
 
-  // Handle checkout process
   const handleCheckout = async () => {
     setLoading(true);
-    if (!token) {
-      // If no token, show error toast and redirect to login
+    if (!isAuthenticated) {
       toast.error("Vui lòng đăng nhập để đặt hàng", {
         position: "top-center",
         autoClose: 1000,
@@ -62,24 +76,8 @@ const Cart = () => {
       }, 1200);
     } else {
       try {
-        const guestCart = JSON.parse(localStorage.getItem("guestCart")) || {};
-        
-        // Nếu có giỏ hàng guest, thực hiện merge
-        if (Object.keys(guestCart).length > 0) {
-          await axios.post(
-            `${backendUrl}/api/cart`,
-            { guestCart },
-            { 
-              headers: { 
-                "Content-Type": "application/json",
-                token: token 
-              },
-              withCredentials: true
-            }
-          );
-          localStorage.removeItem("guestCart");
-        }
-        
+        // Cart merging is now handled automatically in ShopContext during login
+        // Just proceed to checkout
         navigate("/place-order");
       } catch (error) {
         console.error("Checkout error:", error);
@@ -109,7 +107,7 @@ const Cart = () => {
         {cartData.length > 0 && (
           <button
             onClick={() => navigate("/collection")}
-            className="flex items-center text-white bg-blue-700 hover:bg-blue-600 transition px-3 py-2 rounded font-medium"
+            className="flex items-center text-white bg-[#8B4513] hover:bg-[#2C1810] transition px-3 py-2 rounded font-medium"
           >
             <span>Tiếp tục mua hàng</span>
             <IoIosArrowForward className="size-4 ml-1" />
@@ -117,11 +115,10 @@ const Cart = () => {
         )}
       </div>
 
-      {/* If cart is empty */}
       {cartData.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center">
           <img
-            src={assets.cartempty} // Add an empty cart image in assets
+            src={assets.cartempty} 
             alt="Empty Cart"
             className="w-40 sm:w-60 mb-4"
             loading="lazy"
@@ -141,7 +138,6 @@ const Cart = () => {
         </div>
       ) : (
         <>
-          {/* If cart has items */}
           <div>
             {cartData.map((item, index) => {
               const productData = products.find(
@@ -155,7 +151,7 @@ const Cart = () => {
                   <div className="flex items-start gap-6">
                     <img
                       className="w-16 sm:w-20 rounded object-cover"
-                      src={`${backendUrl}/api/product/image/${productData.images[0]}`}
+                      src={getFirstProductImage(productData._id)}
                       alt="product images"
                     />
                     <div>
@@ -185,7 +181,7 @@ const Cart = () => {
                     }}
                   />
                   <img
-                    onClick={() => updateQuantity(item._id, item.size, 0)}
+                    onClick={() => deleteItemFromCart(item._id, item.size)}
                     src={assets.bin_icon}
                     alt="bin icon"
                     className="w-4 sm:w-5 mr-4 cursor-pointer"

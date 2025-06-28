@@ -23,9 +23,10 @@ func (c *CartController) GetCart(ctx *gin.Context) {
 	cart, err := c.cartService.GetCart(userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse(err.Error()))
+		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(cart, "Cart fetched successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(models.CartResponse{Items: cart.Items}, "Cart fetched successfully"))
 }
 
 func (c *CartController) AddToCart(ctx *gin.Context) {
@@ -60,6 +61,23 @@ func (c *CartController) UpdateCart(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Cart updated successfully"))
+}
+
+func (c *CartController) DeleteCartItem(ctx *gin.Context) {
+	userID := ctx.GetString("userID")
+	var cartItem models.DeleteCartItemRequest
+	if err := ctx.ShouldBindJSON(&cartItem); err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
+		return
+	}
+
+	err := c.cartService.DeleteCartItem(userID, cartItem.ProductID, cartItem.Size)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Cart item deleted successfully"))
 }
 
 func (c *CartController) MergeCart(ctx *gin.Context) {

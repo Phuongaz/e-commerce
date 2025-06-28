@@ -5,13 +5,13 @@ import Title from "../components/Title";
 import ProductItem from "../components/ProductItem";
 
 const Collection = () => {
-  const { products, search, setSearch, showSearch } = useContext(ShopContext);
+  const { products, search, setSearch, showSearch, loading } = useContext(ShopContext);
   const [showFilter, setShowFilter] = useState(true);
   const [filterProducts, setFilterProducts] = useState([]);
   const [category, setCategory] = useState([]);
   const [subCategory, setSubCategory] = useState([]);
   const [sortType, setSortType] = useState("relevant");
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000000 });
 
   const toggleCategory = (e) => {
     setCategory((prev) =>
@@ -30,31 +30,45 @@ const Collection = () => {
   };
 
   const applyFilter = () => {
+    console.log("Applying filters with:", { 
+      totalProducts: products.length, 
+      category, 
+      subCategory, 
+      search, 
+      showSearch, 
+      priceRange 
+    });
+    
     let productsCopy = products.slice();
-
+    
     if (showSearch && search) {
       productsCopy = productsCopy.filter((item) =>
         item.name.toLowerCase().includes(search.toLowerCase())
       );
+      console.log("After search filter:", productsCopy.length);
     }
 
     if (category.length > 0) {
       productsCopy = productsCopy.filter((item) =>
         category.includes(item.category)
       );
+      console.log("After category filter:", productsCopy.length);
     }
 
     if (subCategory.length > 0) {
       productsCopy = productsCopy.filter((item) =>
         subCategory.includes(item.subCategory)
       );
+      console.log("After subcategory filter:", productsCopy.length);
     }
 
-    // Apply price range filter
-    productsCopy = productsCopy.filter(
-      (item) => item.price >= priceRange.min && item.price <= priceRange.max
-    );
-
+    // Apply price range filter only if price exists
+    productsCopy = productsCopy.filter((item) => {
+      const price = Number(item.price);
+      return price >= priceRange.min && price <= priceRange.max;
+    });
+    console.log("After price filter:", productsCopy.length, "Price range:", priceRange);
+    
     setFilterProducts(productsCopy);
   };
 
@@ -75,12 +89,33 @@ const Collection = () => {
   };
 
   useEffect(() => {
-    applyFilter();
+    console.log("Products changed:", products.length);
+    if (products.length > 0) {
+      applyFilter();
+    }
   }, [category, subCategory, search, showSearch, products, priceRange]);
 
   useEffect(() => {
     sortProduct();
   }, [sortType]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-lg">Loading products...</div>
+      </div>
+    );
+  }
+
+  // Show message if no products available
+  if (!loading && products.length === 0) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-lg text-gray-600">No products available</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col md:flex-row gap-5 pt-10 border-t px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
@@ -144,16 +179,10 @@ const Collection = () => {
             <div className="flex items-center gap-3 mt-2">
               <input
                 type="number"
+                placeholder="Min"
                 className="w-20 p-1 border border-gray-300 rounded"
-                value={priceRange.min}
-                onFocus={(e) => (e.target.value = "")}
+                value={priceRange.min || ""}
                 onChange={(e) =>
-                  setPriceRange({
-                    ...priceRange,
-                    min: e.target.value ? Number(e.target.value) : 0,
-                  })
-                }
-                onBlur={(e) =>
                   setPriceRange({
                     ...priceRange,
                     min: e.target.value ? Number(e.target.value) : 0,
@@ -164,22 +193,16 @@ const Collection = () => {
               <span>-</span>
               <input
                 type="number"
+                placeholder="Max"
                 className="w-20 p-1 border border-gray-300 rounded"
-                value={priceRange.max}
-                onFocus={(e) => (e.target.value = "")}
+                value={priceRange.max || ""}
                 onChange={(e) =>
                   setPriceRange({
                     ...priceRange,
-                    max: e.target.value ? Number(e.target.value) : 10000,
+                    max: e.target.value ? Number(e.target.value) : 1000000,
                   })
                 }
-                onBlur={(e) =>
-                  setPriceRange({
-                    ...priceRange,
-                    max: e.target.value ? Number(e.target.value) : 10000,
-                  })
-                }
-                max={10000}
+                max={1000000}
               />
             </div>
           </div>
@@ -202,18 +225,30 @@ const Collection = () => {
           </select>
         </div>
 
-        {/* Display Products */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-5">
-          {filterProducts.map((item, index) => (
-            <ProductItem
-              key={index}
-              id={item._id}
-              image={item.images}
-              name={item.name}
-              price={item.price}
-            />
-          ))}
+        {/* Debug Info */}
+        <div className="mb-4 text-sm text-gray-600">
+          Showing {filterProducts.length} of {products.length} products
         </div>
+
+        {/* Display Products */}
+        {filterProducts.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-5">
+            {filterProducts.map((item, index) => (
+              <ProductItem
+                key={item._id || index}
+                id={item._id}
+                image={item.images}
+                name={item.name}
+                price={item.price}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20">
+            <p className="text-gray-600 text-lg">No products found matching your criteria</p>
+            <p className="text-gray-500 text-sm mt-2">Try adjusting your filters</p>
+          </div>
+        )}
       </div>
     </div>
   );

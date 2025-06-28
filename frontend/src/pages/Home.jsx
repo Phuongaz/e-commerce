@@ -6,10 +6,13 @@ import PolicyFeatures from "../components/PolicyFeatures";
 import Testimonials from "../components/Testimonials";
 
 const Home = () => {
+  // const isDevelopment = import.meta.env.DEV;
 
   return (
-    <div className="px-4 sm:px-[5vw] md:px-[7vw]">
+    <div>
       <Hero />
+
+      
       <LatestCollections />
       <BestSellerProducts />
       <PolicyFeatures />

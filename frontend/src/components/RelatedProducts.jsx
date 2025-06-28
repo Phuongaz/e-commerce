@@ -4,7 +4,7 @@ import ProductItem from "./ProductItem";
 import Title from "./Title";
 
 const RelatedProducts = ({ category, subCategory }) => {
-  const { products, currency } = useContext(ShopContext);
+  const { products } = useContext(ShopContext);
   const [related, setRelated] = useState([]);
 
   useEffect(() => {

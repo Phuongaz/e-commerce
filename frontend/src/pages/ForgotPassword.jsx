@@ -14,14 +14,12 @@ const ForgotPassword = () => {
     setIsSubmitting(true);
 
     try {
-      // Step 1: Send email to backend to get the token
       const res = await axios.post(`${backendUrl}/api/user/forgot-password`, {
         email,
       });
 
-      const { token } = res.data; // Extract token from response
+      const { token } = res.data; 
 
-      // Step 2: Prepare email data for EmailJS
       const emailData = {
         service_id: import.meta.env.VITE_EMAILJS_SERVICE_ID,
         template_id: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
@@ -29,11 +27,10 @@ const ForgotPassword = () => {
         template_params: {
           from_email: email,
           token: token,
-          domain: import.meta.env.VITE_FRONTEND_URL, // Frontend domain
+          domain: import.meta.env.VITE_FRONTEND_URL, 
         },
       };
 
-      // Step 3: Send email using EmailJS API
       const emailResponse = await axios.post(
         "https://api.emailjs.com/api/v1.0/email/send",
         emailData,
@@ -76,17 +73,17 @@ const ForgotPassword = () => {
     <div className="flex items-center justify-center">
       <div className="p-10 w-full max-w-lg mt-16">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">
-          Forgot Password
+          Quên mật khẩu
         </h2>
         <p className="text-center text-gray-600 mb-6">
-          Enter your email to receive password reset instructions.
+          Nhập email để nhận hướng dẫn đặt lại mật khẩu.
         </p>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="relative">
             <FaEnvelope className="absolute top-4 left-3 text-gray-500" />
             <input
               type="email"
-              placeholder="Email Address"
+              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-md"
@@ -102,7 +99,7 @@ const ForgotPassword = () => {
             }`}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Sending..." : "Send Reset Link"}
+            {isSubmitting ? "Đang gửi..." : "Gửi liên kết đặt lại"}
           </button>
         </form>
       </div>

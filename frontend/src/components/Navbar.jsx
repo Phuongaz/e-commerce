@@ -4,8 +4,8 @@ import { Link, NavLink } from "react-router-dom";
 import { ShopContext } from "../context/Shopcontext.jsx";
 import { useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
 import { toast } from "react-toastify";
+import { Logout } from "../api/user";
 
 const Navbar = () => {
   const [visible, setVisible] = useState(false);
@@ -14,16 +14,13 @@ const Navbar = () => {
     getCartCount,
     navigate,
     setCartItems,
-    backendUrl,
   } = useContext(ShopContext);
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
   const location = useLocation(); // Get the current location
 
-  const Logout = async () => {
+  const HanleLogout = async () => {
     navigate("/");
-    const response = await axios.post(`${backendUrl}/api/auth/logout`, {}, {
-      withCredentials: true,
-    });
+    const response = await Logout();
     if (response.data.success) {
       setIsAuthenticated(false);
       setCartItems({});
@@ -90,19 +87,19 @@ const Navbar = () => {
                   onClick={() => navigate("/my-profile")}
                   className="cursor-pointer hover:text-[#8B4513] px-5"
                 >
-                  My Profile
+                  Hồ sơ
                 </p>
                 <p
                   onClick={() => navigate("/orders")}
                   className="cursor-pointer hover:text-[#8B4513] px-5"
                 >
-                  Orders
+                  Đơn hàng
                 </p>
                 <p
-                  onClick={Logout}
+                  onClick={HanleLogout}
                   className="cursor-pointer hover:text-[#8B4513] px-5"
                 >
-                  Logout
+                  Đăng xuất
                 </p>
               </div>
             </div>
@@ -137,7 +134,7 @@ const Navbar = () => {
               alt="dropdowm icon"
               className="h-4 rotate-180"
             />
-            <p>Back</p>
+            <p>Quay lại</p>
           </div>
 
           <NavLink

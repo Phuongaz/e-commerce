@@ -53,7 +53,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 		public.GET("/categories", categoryController.ListCategories)
 		public.GET("/categories/:id", categoryController.GetCategory)
 
-		public.GET("product/image/:id", productController.GetProductImage)
+		public.GET("/product/image/:id", productController.GetProductImage)
 	}
 
 	protected := r.Group("/api")
@@ -71,6 +71,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 				cart.POST("/add", cartController.AddToCart) //add to cart
 				cart.PUT("/update", cartController.UpdateCart)
 				cart.POST("/merge", cartController.MergeCart) //merge cart on guest user after login
+				cart.POST("/delete", cartController.DeleteCartItem)
 			}
 		}
 		protected.POST("/orders", orderController.CreateOrder)

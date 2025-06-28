@@ -5,8 +5,9 @@ import { toast } from "react-toastify";
 import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { Login } from "../api/user";
 
-const Login = () => {
+const HandleLogin = () => {
   const {isAuthenticated, setIsAuthenticated} = useContext(AuthContext);
   const [currentState, setCurrentState] = useState("Login");
   const {navigate, backendUrl } = useContext(ShopContext);
@@ -26,11 +27,7 @@ const Login = () => {
           ? { name, email, password }
           : { email, password };
 
-      const response = await axios.post(
-        `${backendUrl}/api/auth${endpoint}`,
-        payload, 
-        { withCredentials: true }
-      );
+      const response = await Login(payload);
 
       if (response.data.success) {
         toast.success(response.data.message, {
@@ -81,8 +78,8 @@ const Login = () => {
   return (
     <div className="flex items-center justify-center">
       <div className="bg-white rounded-xl p-10 mt-10 w-full max-w-lg">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-10">
-          {currentState === "Login" ? "Welcome Back!" : "Create an Account"}
+        <h2 className="text-3xl montserrat-regular text-center text-[#8B4513] mb-10">
+          {currentState === "Login" ? "Chào mừng trở lại!" : "Tạo tài khoản"}
         </h2>
         <form onSubmit={onSubmitHandler} className="space-y-5">
           {currentState === "Sign Up" && (
@@ -90,7 +87,7 @@ const Login = () => {
               <FaUser className="absolute top-4 left-3 text-gray-500" />
               <input
                 type="text"
-                placeholder="Full Name"
+                placeholder="Họ và tên"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-md"
@@ -103,7 +100,7 @@ const Login = () => {
             <FaEnvelope className="absolute top-4 left-3 text-gray-500" />
             <input
               type="email"
-              placeholder="Email Address"
+              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-md"
@@ -115,7 +112,7 @@ const Login = () => {
             <FaLock className="absolute top-4 left-3 text-gray-500" />
             <input
               type="password"
-              placeholder="Password"
+              placeholder="Mật khẩu"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-md"
@@ -129,37 +126,37 @@ const Login = () => {
             <div className="text-left">
               <Link
                 to="/forgot-password"
-                className="text-blue-600 hover:underline"
+                className="text-[#8B4513] hover:text-[#2C1810] font-semibold cursor-pointer hover:underline"
               >
-                Forgot Password?
+                Quên mật khẩu? <p className="text-xs text-gray-500">(Đang phát triển)</p>
               </Link>
             </div>
           )}
 
           <button
             type="submit"
-            className={`w-full bg-blue-700 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold text-lg transition duration-300 ${
+            className={`w-full bg-[#8B4513] hover:bg-[#2C1810] text-white py-3 rounded-lg font-semibold text-lg transition duration-300 ${
               isButtonDisabled
                 ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-blue-800"
+                : "hover:bg-[#2C1810]"
             }`}
             disabled={isButtonDisabled}
           >
-            {currentState === "Login" ? "Sign In" : "Sign Up"}
+            {currentState === "Login" ? "Đăng nhập" : "Đăng ký"}
           </button>
         </form>
         <div className="text-center mt-6">
           <p className="text-gray-700">
             {currentState === "Login"
-              ? "New here? "
-              : "Already have an account? "}
+              ? "Chưa có tài khoản? "
+              : "Đã có tài khoản? "}
             <span
-              className="text-blue-600 font-semibold cursor-pointer hover:underline"
+              className="text-[#8B4513] hover:text-[#2C1810] font-semibold cursor-pointer hover:underline"
               onClick={() =>
                 setCurrentState(currentState === "Login" ? "Sign Up" : "Login")
               }
             >
-              {currentState === "Login" ? "Create Account" : "Login"}
+              {currentState === "Login" ? "Tạo tài khoản" : "Đăng nhập"}
             </span>
           </p>
         </div>
@@ -168,4 +165,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default HandleLogin;

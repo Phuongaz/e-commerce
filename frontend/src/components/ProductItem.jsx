@@ -1,21 +1,18 @@
 import React, { useContext } from "react";
 import { ShopContext } from "../context/Shopcontext";
 import { Link } from "react-router-dom";
+import { backendUrl } from "../api/axiosInstance";
 
 const ProductItem = ({ id, image, name, price }) => {
-  const { currency, backendUrl } = useContext(ShopContext);
+  const { currency } = useContext(ShopContext);
 
-  // Generate image URL from image ID using the API endpoint
   const getImageUrl = (imageId) => {
     if (!imageId) return '';
-    // Use the backend API endpoint to get image by ID
     return `${backendUrl}/api/product/image/${imageId}`;
   };
 
-  // Default image when no product image is available
-  const defaultImage = "https://via.placeholder.com/400x300/F5F5DC/2C1810?text=No+Image";
+  const defaultImage = "https://png.pngtree.com/png-vector/20190820/ourmid/pngtree-no-image-vector-illustration-isolated-png-image_1694547.jpg";
   
-  // Get first image ID or use default
   const productImage = (image && Array.isArray(image) && image.length > 0) 
     ? getImageUrl(image[0]) 
     : defaultImage;
@@ -31,7 +28,7 @@ const ProductItem = ({ id, image, name, price }) => {
           src={productImage}
           alt={name}
           onError={(e) => {
-            e.target.src = defaultImage; // Fallback if image fails to load
+            e.target.src = defaultImage; 
           }}
         />
       </div>

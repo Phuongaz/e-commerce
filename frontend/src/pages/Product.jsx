@@ -4,10 +4,11 @@ import { useParams } from "react-router-dom";
 import { ShopContext } from "../context/Shopcontext";
 import { assets } from "../assets/frontend_assets/assets";
 import RelatedProducts from "../components/RelatedProducts";
+import { backendUrl } from "../api/axiosInstance";
 
 const Product = () => {
   const { productId } = useParams();
-  const { products, currency, addToCart, backendUrl } = useContext(ShopContext);
+  const { products, currency, addToCart } = useContext(ShopContext);
   const [productData, setProductData] = useState(false);
   const [image, setImage] = useState("");
   const [size, setSize] = useState("");
@@ -95,7 +96,7 @@ const Product = () => {
           </p>
 
           <button
-            onClick={() => addToCart(productData._id, size)}
+            onClick={() => addToCart(productData._id, 1, size)}
             className="bg-blue-800 text-white px-8 py-3 text-sm active:bg-gray-800 hover:bg-blue-700"
           >
             Thêm vào giỏ hàng
