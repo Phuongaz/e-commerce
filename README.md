@@ -47,3 +47,4 @@ A simple full-stack e-commerce platform built with modern technologies, featurin
 - XSS protection through React
 - Storage and handle token in cookie
 - Input validation
+- SSL/TLS encryption (just for demo, this project use openssl to generate self-signed certificate)
