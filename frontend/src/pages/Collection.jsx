@@ -9,7 +9,7 @@ const Collection = () => {
   const [showFilter, setShowFilter] = useState(true);
   const [filterProducts, setFilterProducts] = useState([]);
   const [category, setCategory] = useState([]);
-  const [subCategory, setSubCategory] = useState([]);
+  const [subCategory, setSubCategory] = useState([]); 
   const [sortType, setSortType] = useState("relevant");
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000000 });
 
