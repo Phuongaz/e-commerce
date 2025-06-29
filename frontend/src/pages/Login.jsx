@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { Login } from "../api/user";
+import { Login, Register } from "../api/user";
 
 const HandleLogin = () => {
   const {isAuthenticated, setIsAuthenticated} = useContext(AuthContext);
@@ -21,13 +21,14 @@ const HandleLogin = () => {
     e.preventDefault();
     setIsButtonDisabled(true);
     try {
-      const endpoint = currentState === "Sign Up" ? "/register" : "/login";
       const payload =
         currentState === "Sign Up"
           ? { name, email, password }
           : { email, password };
 
-      const response = await Login(payload);
+      const response = currentState === "Sign Up" 
+        ? await Register(payload)
+        : await Login(payload);
 
       if (response.data.success) {
         toast.success(response.data.message, {
