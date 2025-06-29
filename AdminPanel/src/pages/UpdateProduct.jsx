@@ -5,7 +5,7 @@ import { ProductContext } from "../context/ProductContext.jsx";
 
 const UpdateProduct = () => {
   const { getProduct, updateProduct, uploadImages } = useContext(ProductContext);
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -85,18 +85,15 @@ const UpdateProduct = () => {
     }
   };
 
-  // Remove existing image
   const removeExistingImage = (index) => {
     setExistingImageIds(existingImageIds.filter((_, i) => i !== index));
   };
 
-  // Remove new image
   const removeNewImage = (index) => {
     setNewImages(newImages.filter((_, i) => i !== index));
     setNewImageIds(newImageIds.filter((_, i) => i !== index));
   };
 
-  // Handle product update
   const handleUpdateProduct = async (e) => {
     e.preventDefault();
 

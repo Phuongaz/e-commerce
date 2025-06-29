@@ -11,14 +11,25 @@ import UpdateProduct from "./pages/UpdateProduct";
 import AddProduct from "./pages/AddProduct";
 import { AuthContext } from "./context/AuthContext";
 
-export const backendUrl = import.meta.env.VITE_BACKEND_URL;
+export const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 export const currency = "VNĐ";
 
 const App = () => {
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
   return (
     <div className="min-h-screen">
-      <ToastContainer />
+      <ToastContainer
+        position="top-center"
+        autoClose={1500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       {isAuthenticated === null ? (
         <Login />
       ) : (

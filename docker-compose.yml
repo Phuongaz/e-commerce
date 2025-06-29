@@ -8,7 +8,12 @@ services:
     restart: unless-stopped
 
   admin_frontend:
-    build: ./AdminPanel
+    build: 
+      context: ./AdminPanel
+      args:
+        - VITE_BACKEND_URL=
+    environment:
+      - VITE_BACKEND_URL=
     networks:
       - app-network
     restart: unless-stopped

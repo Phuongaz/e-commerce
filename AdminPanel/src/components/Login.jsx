@@ -36,6 +36,13 @@ const Login = () => {
         toast.error("You are not authorized to access this page", {
           position: "top-center",
           autoClose: 1500,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: false,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Zoom,
         });
       }
 

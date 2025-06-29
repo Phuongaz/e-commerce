@@ -7,8 +7,9 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const [isAuthenticated, setIsAuthenticated] = useState(null); 
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
   const checkAuthValidity = async () => {
     try {
       //send request to backend to verify token
