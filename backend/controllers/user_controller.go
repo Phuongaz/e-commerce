@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"os"
 
 	"ecommerce-api/models"
 	"ecommerce-api/services"
@@ -141,5 +142,11 @@ func (c *UserController) Logout(ctx *gin.Context) {
 }
 
 func setCookie(ctx *gin.Context, token string) {
-	ctx.SetCookie("access_token", token, 3600, "/", "", false, false)
+	secure, httpOnly := false, false
+	isDevelopment := os.Getenv("ENV") == "development"
+	if !isDevelopment {
+		secure, httpOnly = true, true
+	}
+
+	ctx.SetCookie("access_token", token, 3600, "/", "", secure, httpOnly)
 }

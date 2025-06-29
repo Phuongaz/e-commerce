@@ -107,9 +107,9 @@ func CORS() gin.HandlerFunc {
 			"http://localhost:3000",  // Frontend
 			"http://localhost:3001",  // Admin Panel
 			"https://localhost:3000", // Frontend (HTTPS)
-			"https://localhost:3001",
-			"http://localhost",
-			"https://localhost",
+			"https://localhost:3001", // Admin Panel (HTTPS)
+			"http://localhost",       // Nginx proxy
+			"https://localhost",      // Nginx proxy (HTTPS)
 		}
 
 		isAllowed := false
@@ -120,8 +120,17 @@ func CORS() gin.HandlerFunc {
 			}
 		}
 
+		// Always allow requests from nginx proxy (no origin header)
+		if origin == "" {
+			isAllowed = true
+		}
+
 		if isAllowed {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			if origin != "" {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			} else {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			}
 			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 			c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 			c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
