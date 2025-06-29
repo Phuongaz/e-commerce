@@ -69,7 +69,7 @@ func (c *ProductController) CreateProduct(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, models.NewSuccessResponse(createdProduct, "Product created successfully"))
+	ctx.JSON(http.StatusCreated, models.NewSuccessResponse(createdProduct, utils.MessageProductCreated))
 }
 
 func (c *ProductController) ListProducts(ctx *gin.Context) {
@@ -83,42 +83,42 @@ func (c *ProductController) ListProducts(ctx *gin.Context) {
 		products = []*models.Product{}
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(products, "Products fetched successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(products, utils.MessageProductFetchSuccess))
 }
 
 func (c *ProductController) GetProduct(ctx *gin.Context) {
 	id, err := primitive.ObjectIDFromHex(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(utils.MessageProductIDNotFound))
 		return
 	}
 
 	product, err := c.productService.GetProduct(id)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse(utils.MessageProductIDNotFound))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(product, "Product fetched successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(product, utils.MessageProductFetchSuccess))
 }
 
 func (c *ProductController) UpdateProduct(ctx *gin.Context) {
 	id, err := primitive.ObjectIDFromHex(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid product ID"))
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(utils.MessageProductIDNotFound))
 		return
 	}
 
 	var product models.Product
 	if err := ctx.ShouldBindJSON(&product); err != nil {
-		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(utils.MessageProductStructFail))
 		return
 	}
 
 	// Validate that image IDs exist
 	for _, imageID := range product.Images {
 		if _, err := utils.GetImage(imageID); err != nil {
-			ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(fmt.Sprintf("Image with ID %s not found", imageID)))
+			ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(fmt.Sprintf(utils.MessageProductImageIDNotFound, imageID)))
 			return
 		}
 	}
@@ -129,13 +129,13 @@ func (c *ProductController) UpdateProduct(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(updatedProduct, "Product updated successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(updatedProduct, utils.MessageProductUpdated))
 }
 
 func (c *ProductController) DeleteProduct(ctx *gin.Context) {
 	id, err := primitive.ObjectIDFromHex(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(utils.MessageProductIDNotFound))
 		return
 	}
 
@@ -144,7 +144,7 @@ func (c *ProductController) DeleteProduct(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Product deleted successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, utils.MessageProductDeleted))
 }
 
 func (c *ProductController) GetProductImage(ctx *gin.Context) {
