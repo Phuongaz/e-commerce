@@ -3,6 +3,7 @@ package controllers
 import (
 	"ecommerce-api/models"
 	"ecommerce-api/services"
+	"ecommerce-api/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,7 +27,7 @@ func (c *CartController) GetCart(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(models.CartResponse{Items: cart.Items}, "Cart fetched successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(models.CartResponse{Items: cart.Items}, utils.MessageCartFecthSuccess))
 }
 
 func (c *CartController) AddToCart(ctx *gin.Context) {
@@ -43,7 +44,7 @@ func (c *CartController) AddToCart(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Item added to cart successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, utils.MessageCartItemAddSuccess))
 }
 
 func (c *CartController) UpdateCart(ctx *gin.Context) {
@@ -60,7 +61,7 @@ func (c *CartController) UpdateCart(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Cart updated successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, utils.MessageCartUpdated))
 }
 
 func (c *CartController) DeleteCartItem(ctx *gin.Context) {
@@ -77,7 +78,7 @@ func (c *CartController) DeleteCartItem(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Cart item deleted successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, utils.MessageCartItemDeleteSuccess))
 }
 
 func (c *CartController) MergeCart(ctx *gin.Context) {
@@ -94,5 +95,5 @@ func (c *CartController) MergeCart(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "Cart merged successfully"))
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, utils.MessageCartMergeSuccess))
 }
