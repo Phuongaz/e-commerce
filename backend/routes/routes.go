@@ -5,6 +5,7 @@ import (
 	"ecommerce-api/middleware"
 	"ecommerce-api/services"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -35,7 +36,7 @@ func SetupRoutes(r *gin.Engine, db *mongo.Database) {
 	// Middleware
 	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
-
+	r.Use(middleware.RateLimitMiddleware(20, time.Second))
 	// Public routes
 	public := r.Group("/api")
 	{
