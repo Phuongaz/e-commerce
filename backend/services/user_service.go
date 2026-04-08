@@ -70,11 +70,17 @@ func (s *UserService) GetUserByID(id primitive.ObjectID) (*models.User, error) {
 	return &user, nil
 }
 
-func (s *UserService) UpdateUser(id primitive.ObjectID, name string) (*models.User, error) {
+func (s *UserService) UpdateUserProfile(id primitive.ObjectID, name, cccd, address, phone, paymentCard string, dateOfBirth primitive.DateTime, gender string) (*models.User, error) {
 	update := bson.M{
 		"$set": bson.M{
-			"name":       name,
-			"updated_at": time.Now(),
+			"name":         name,
+			"cccd":         cccd,
+			"address":      address,
+			"phone":        phone,
+			"payment_card": paymentCard,
+			"date_of_birth": dateOfBirth,
+			"gender":       gender,
+			"updated_at":   primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -105,24 +111,6 @@ func (s *UserService) GenerateToken(user *models.User) (string, error) {
 
 	// TODO: Get secret from config
 	return token.SignedString([]byte("your_jwt_secret_key_here"))
-}
-
-func (s *UserService) DeleteUser(id string) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	result, err := s.collection.DeleteOne(context.Background(), bson.M{"_id": objectID})
-	if err != nil {
-		return err
-	}
-
-	if result.DeletedCount == 0 {
-		return errors.New("user not found")
-	}
-
-	return nil
 }
 
 func (s *UserService) Login(email, password string) (string, error) {
@@ -212,4 +200,88 @@ func (s *UserService) ForgotPassword(email string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func (s *UserService) ListUsers(limit, offset int64, name, role string) ([]models.User, int64, error) {
+	filter := bson.M{}
+
+	if name != "" {
+		filter["name"] = bson.M{"$regex": name, "$options": "i"}
+	}
+
+	if role != "" {
+		filter["role"] = role
+	}
+
+	// Get total count
+	total, err := s.collection.CountDocuments(context.Background(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	findOptions := options.Find()
+	if limit > 0 {
+		findOptions.SetLimit(limit)
+	}
+	if offset > 0 {
+		findOptions.SetSkip(offset)
+	}
+	findOptions.SetSort(bson.M{"created_at": -1}) // Sort by newest first
+
+	var users []models.User
+	cursor, err := s.collection.Find(context.Background(), filter, findOptions)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+
+	for cursor.Next(context.Background()) {
+		var user models.User
+		if err := cursor.Decode(&user); err != nil {
+			return nil, 0, err
+		}
+		users = append(users, user)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}
+
+func (s *UserService) DeleteUser(id primitive.ObjectID) error {
+	result, err := s.collection.DeleteOne(context.Background(), bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+
+	return nil
+}
+
+func (s *UserService) ChangeUserRole(id primitive.ObjectID, role string) (*models.User, error) {
+	update := bson.M{
+		"$set": bson.M{
+			"role":       role,
+			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+		},
+	}
+
+	result := s.collection.FindOneAndUpdate(
+		context.Background(),
+		bson.M{"_id": id},
+		update,
+		options.FindOneAndUpdate().SetReturnDocument(options.After),
+	)
+
+	var user models.User
+	if err := result.Decode(&user); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

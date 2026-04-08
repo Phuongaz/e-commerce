@@ -3,6 +3,8 @@ package controllers
 import (
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"ecommerce-api/models"
 	"ecommerce-api/services"
@@ -94,6 +96,21 @@ func (c *UserController) Login(ctx *gin.Context) {
 // 	ctx.JSON(http.StatusOK, gin.H{"message": "Password reset email sent"})
 // }
 
+func (c *UserController) GetUserProfile(ctx *gin.Context) {
+	userIDStr := ctx.Param("id")
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid user ID"))
+		return
+	}
+	user, err := c.userService.GetUserByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse(utils.MessageUserIDNotFound))
+		return
+	}
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(user, utils.MessageFetchUserSuccess))
+}
+
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userIDStr := ctx.GetString("userID")
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
@@ -120,7 +137,13 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	}
 
 	var input struct {
-		Name string `json:"name" binding:"required"`
+		Name        string `json:"name"`
+		CCCD        string `json:"cccd"`
+		Address     string `json:"address"`
+		Phone       string `json:"phone"`
+		PaymentCard string `json:"payment_card"`
+		DateOfBirth string `json:"date_of_birth"`
+		Gender      string `json:"gender"`
 	}
 
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -128,7 +151,17 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	user, err := c.userService.UpdateUser(userID, input.Name)
+	var dateOfBirth primitive.DateTime
+	if input.DateOfBirth != "" {
+		parsedTime, err := time.Parse(time.RFC3339, input.DateOfBirth)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid date format"))
+			return
+		}
+		dateOfBirth = primitive.NewDateTimeFromTime(parsedTime)
+	}
+
+	user, err := c.userService.UpdateUserProfile(userID, input.Name, input.CCCD, input.Address, input.Phone, input.PaymentCard, dateOfBirth, input.Gender)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, models.NewErrorResponse(err.Error()))
 		return
@@ -150,4 +183,129 @@ func setCookie(ctx *gin.Context, token string) {
 	}
 
 	ctx.SetCookie("access_token", token, 3600, "/", "", secure, httpOnly)
+}
+
+func (c *UserController) ListUsers(ctx *gin.Context) {
+	limitStr := ctx.DefaultQuery("limit", "20")
+	limit, err := strconv.ParseInt(limitStr, 10, 64)
+	if err != nil || limit <= 0 {
+		limit = 20 // default
+	}
+
+	pageStr := ctx.DefaultQuery("page", "1")
+	page, err := strconv.ParseInt(pageStr, 10, 64)
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	name := ctx.Query("name")
+	role := ctx.Query("role")
+
+	users, total, err := c.userService.ListUsers(limit, (page-1)*limit, name, role)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse(utils.MessageFetchUserFail))
+		return
+	}
+
+	totalPages := (total + limit - 1) / limit // Ceiling division
+
+	response := gin.H{
+		"users":       users,
+		"total":       total,
+		"page":        page,
+		"limit":       limit,
+		"total_pages": totalPages,
+	}
+
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(response, utils.MessageFetchUserSuccess))
+}
+
+func (c *UserController) UpdateUser(ctx *gin.Context) {
+	userIDStr := ctx.Param("id")
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid user ID"))
+		return
+	}
+
+	var input struct {
+		Name        string `json:"name"`
+		CCCD        string `json:"cccd"`
+		Address     string `json:"address"`
+		Phone       string `json:"phone"`
+		PaymentCard string `json:"payment_card"`
+		DateOfBirth string `json:"date_of_birth"`
+		Gender      string `json:"gender"`
+	}
+
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
+		return
+	}
+
+	var dateOfBirth primitive.DateTime
+	if input.DateOfBirth != "" {
+		parsedTime, err := time.Parse(time.RFC3339, input.DateOfBirth)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid date format"))
+			return
+		}
+		dateOfBirth = primitive.NewDateTimeFromTime(parsedTime)
+	}
+
+	user, err := c.userService.UpdateUserProfile(userID, input.Name, input.CCCD, input.Address, input.Phone, input.PaymentCard, dateOfBirth, input.Gender)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse("User not found"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(user, "User updated successfully"))
+}
+
+func (c *UserController) DeleteUser(ctx *gin.Context) {
+	userIDStr := ctx.Param("id")
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid user ID"))
+		return
+	}
+
+	err = c.userService.DeleteUser(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.NewErrorResponse("Failed to delete user"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(nil, "User deleted successfully"))
+}
+
+func (c *UserController) ChangeUserRole(ctx *gin.Context) {
+	userIDStr := ctx.Param("id")
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid user ID"))
+		return
+	}
+
+	var input struct {
+		Role string `json:"role" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse(err.Error()))
+		return
+	}
+
+	if input.Role != "user" && input.Role != "admin" {
+		ctx.JSON(http.StatusBadRequest, models.NewErrorResponse("Invalid role"))
+		return
+	}
+
+	user, err := c.userService.ChangeUserRole(userID, input.Role)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, models.NewErrorResponse("User not found"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewSuccessResponse(user, "User role updated successfully"))
 }

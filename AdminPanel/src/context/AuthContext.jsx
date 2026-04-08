@@ -6,120 +6,107 @@ import { useNavigate } from "react-router-dom";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const navigate    = useNavigate();
+  const [user, setUser]                   = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(null); // null = loading
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
-  // Kiểm tra token còn hợp lệ
+  // â”€â”€ Kiá»ƒm tra session hiá»‡n táº¡i + Ä‘áº£m báº£o lÃ  admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const checkAuthValidity = async () => {
     try {
-      const response = await axios.get(`${backendUrl}/api/user/profile`, {
+      const res = await axios.get(`${backendUrl}/api/user/profile`, {
         withCredentials: true,
       });
 
-      if (response.data.success === false) {
-        toast.warning("Session expired. Please log in again.", {
-          position: "top-center",
-          autoClose: 1500,
-        });
+      if (res.data.success && res.data.data?.role === "admin") {
+        setIsAuthenticated(true);
+        setUser(res.data.data);
+      } else {
+        // ÄÃ£ Ä‘Äƒng nháº­p nhÆ°ng khÃ´ng pháº£i admin
         setIsAuthenticated(false);
         setUser(null);
-       // navigate("/admin/login");
-      } else {
-        setIsAuthenticated(true);
-        setUser(response.data.data);
+        if (res.data.success) {
+          // CÃ³ session nhÆ°ng khÃ´ng cÃ³ quyá»n â€” logout cookie cho sáº¡ch
+          await axios.post(`${backendUrl}/api/auth/logout`, {}, { withCredentials: true }).catch(() => {});
+        }
       }
-    } catch (error) {
-      console.error("Auth verification failed:", error);
+    } catch {
       setIsAuthenticated(false);
       setUser(null);
     }
   };
 
-  // LOGIN
+  // â”€â”€ ÄÄƒng nháº­p â€” chá»‰ cho phÃ©p role admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const login = async (email, password) => {
     try {
-      const response = await axios.post(
+      const loginRes = await axios.post(
         `${backendUrl}/api/auth/login`,
         { email, password },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
-      if (response.data.success === true) {
-        // Lấy profile ngay sau khi login
-        const profile = await getProfile();
-        setIsAuthenticated(true);
-        setUser(profile);
-        return { success: true, data: profile };
-      } else {
-        return { success: false, message: response.data.message };
+      if (!loginRes.data.success) {
+        return { success: false, message: loginRes.data.message || "ÄÄƒng nháº­p tháº¥t báº¡i" };
       }
-    } catch (error) {
-      console.error("Login failed:", error);
-      return { success: false, message: "Login failed" };
-    }
-  };
 
-  // LOGOUT
-  const logout = async () => {
-    try {
-      const response = await axios.post(
-        `${backendUrl}/api/auth/logout`,
-        {},
-        { withCredentials: true }
-      );
-      setIsAuthenticated(false);
-      setUser(null);
-      navigate("/admin/login");
-      if (response.data.success !== true) {
-        toast.error("Logout failed");
-      }
-    } catch (error) {
-      setIsAuthenticated(false);
-      setUser(null);
-      navigate("/admin/login");
-      console.error("Logout failed:", error);
-    }
-  };
-
-  // GET PROFILE
-  const getProfile = async () => {
-    try {
-      const response = await axios.get(`${backendUrl}/api/user/profile`, {
+      // Láº¥y profile Ä‘á»ƒ kiá»ƒm tra role
+      const profileRes = await axios.get(`${backendUrl}/api/user/profile`, {
         withCredentials: true,
       });
-      if (response.data.success === true) {
-        setUser(response.data.data);
-        return response;
-      } else {
+
+      if (!profileRes.data.success || profileRes.data.data?.role !== "admin") {
+        // KhÃ´ng pháº£i admin â€” há»§y session ngay
+        await axios.post(`${backendUrl}/api/auth/logout`, {}, { withCredentials: true }).catch(() => {});
+        setIsAuthenticated(false);
         setUser(null);
-        return response;
+        return { success: false, message: "TÃ i khoáº£n khÃ´ng cÃ³ quyá»n truy cáº­p trang quáº£n trá»‹" };
       }
-    } catch (error) {
-      console.error("Get profile failed:", error);
+
+      setIsAuthenticated(true);
+      setUser(profileRes.data.data);
+      return { success: true };
+    } catch (err) {
+      setIsAuthenticated(false);
       setUser(null);
-      return { success: false };
+      return { success: false, message: err.response?.data?.message || "ÄÄƒng nháº­p tháº¥t báº¡i" };
     }
+  };
+
+  // â”€â”€ ÄÄƒng xuáº¥t â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const logout = async () => {
+    try {
+      await axios.post(`${backendUrl}/api/auth/logout`, {}, { withCredentials: true });
+    } catch { /* ignore */ }
+    setIsAuthenticated(false);
+    setUser(null);
+    navigate("/");
+  };
+
+  // â”€â”€ Láº¥y profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const getProfile = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/user/profile`, { withCredentials: true });
+      if (res.data.success) setUser(res.data.data);
+      return res;
+    } catch {
+      return { data: { success: false } };
+    }
+  };
+
+  // â”€â”€ Láº¥y danh sÃ¡ch user (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const getUsers = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/admin/users`, { withCredentials: true });
+      return res.data.data || [];
+    } catch { return []; }
   };
 
   useEffect(() => {
-    if (isAuthenticated === null) {
-      checkAuthValidity();
-    }
-  }, [isAuthenticated]);
+    if (isAuthenticated === null) checkAuthValidity();
+  }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated,
-        setIsAuthenticated,
-        login,
-        logout,
-        getProfile,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated, setIsAuthenticated, login, logout, getProfile, getUsers }}>
       {children}
     </AuthContext.Provider>
   );

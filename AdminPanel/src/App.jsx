@@ -9,10 +9,12 @@ import LoginPage from "./pages/Login";
 import Home from "./pages/Home";
 import UpdateProduct from "./pages/UpdateProduct";
 import AddProduct from "./pages/AddProduct";
+import Users from "./pages/Users";
+import ApiManagement from "./pages/ApiManagement";
 import { AuthContext } from "./context/AuthContext";
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
-export const currency = "VNĐ";
+export const currency = " VND";
 
 const App = () => {
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
@@ -47,6 +49,8 @@ const App = () => {
                 <Route path="/admin/update-item/:id" element={<UpdateProduct />} />
                 <Route path="/admin/list-items" element={<ListProducts />} />
                 <Route path="/admin/orders" element={<Orders />} />
+                <Route path="/admin/users" element={<Users />} />
+                <Route path="/admin/api-management" element={<ApiManagement />} />
               </Routes>
             </div>
           </div>
